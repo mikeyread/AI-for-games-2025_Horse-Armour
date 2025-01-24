@@ -2,12 +2,16 @@ using Unity.Mathematics;
 using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using System;
+using UnityEditor;
+using UnityEngine.UIElements;
 
 
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class terrainMesh : MonoBehaviour {
 
+    // Mesh Parameters
     Mesh terrain;
 
     private List<Vector3> vertices = new List<Vector3>();
@@ -15,15 +19,22 @@ public class terrainMesh : MonoBehaviour {
     private List<Vector2> uv = new List<Vector2>();
     private List<int> triangles = new List<int>();
 
+    // Perlin Vectors
     private List<Vector2> perlinVector = new List<Vector2>();
 
-    [SerializeField]int length = 10;
-    [SerializeField]int width = 10;
-    [SerializeField]float size = 2.5f;
+    // Exceeding 65536 quads will cause issues due to missing meshes, please be careful when exceeding.
+    [Tooltip("Assigns the x Width of the procedural Quad Grid")]
+    [SerializeField][Range(1, 255)] int width = 64;
+    [Tooltip("Assigns the z Length of the procedural Quad Grid")]
+    [SerializeField][Range(1, 255)] int length = 64;
+    [Tooltip("A scaler for the Grids individual quad meshes")]
+    [SerializeField][Range(0.033f, 10f)] float size = 2.5f;
+
 
     private int prevLength;
     private int prevWidth;
     private float prevSize;
+
 
 
     // TO BE DONE
@@ -44,7 +55,7 @@ public class terrainMesh : MonoBehaviour {
         return new Vector2(rotX, rotY);
     }
 
-    // Finds the normalised coords of a point on the whole map.
+    // Finds the normalised coords of a point on the whole map. Will refactor later (maybe).
     private Vector2 normalisedCoordinate(int x, int z)
     {
         float normalX = (float)x / (float)width;
@@ -53,7 +64,6 @@ public class terrainMesh : MonoBehaviour {
 
         return new Vector2(normalX, normalZ);
     }
-
 
     private void OnEnable()
     {
@@ -64,20 +74,20 @@ public class terrainMesh : MonoBehaviour {
         prevSize = size;
     }
 
-
     void Start()
     {
         this.GetComponent<MeshFilter>().mesh = terrain;
-        this.GetComponent<MeshRenderer>().material = new Material(Shader.Find("VertexLit"));
+        this.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Universal Render Pipeline/Simple Lit"));
         GenerateMesh();
     }
 
+
+    // Just dynamically updates the mesh if the Serialized fields are changed during runtime.
     private void Update()
     {
-        // Need to fix this
         if (!prevLength.Equals(length) || !prevWidth.Equals(width) || !prevSize.Equals(size))
-        {
-            Debug.Log("Change detected, refreshing mesh!");
+        { 
+            Debug.Log("Change Detected: Refreshing Mesh");
 
             GenerateMesh();
             prevLength = length;
@@ -95,42 +105,41 @@ public class terrainMesh : MonoBehaviour {
         perlinVector.Add(normalisedRandomVector());
         perlinVector.Add(normalisedRandomVector());
 
-        float zOffset = (length * size) / 2;
+        vertices.Clear();
+        triangles.Clear();
+        uv.Clear();
+        normals.Clear();
+
         float xOffset = (width * size) / 2;
+        float zOffset = (length * size) / 2;
 
-        int triIndex = 0;
-        for (int z = 0; z < length; z++)
-        {
-            float newZ = z * size - zOffset;
+        
+        if (length <= 0 || width <= 0) return;
 
-            for (int x = 0; x < width; x++) {
-                Vector2 normalCoord = normalisedCoordinate(x, z);
+        for (int vertIndex = 0; vertIndex < (length + 1) * (width + 1); vertIndex++) {
+            float xCoord = ((vertIndex % (width + 1)) * size) - xOffset;
+            float zCoord = ((vertIndex / (width + 1)) * size) - zOffset;
 
-                float newX = x * size - xOffset;
-                vertices.Add(new Vector3(newX, 0, newZ));
-                vertices.Add(new Vector3(newX, 0, newZ + size));
-                vertices.Add(new Vector3(newX + size, 0, newZ));
-                vertices.Add(new Vector3(newX + size, 0, newZ + size));
+            vertices.Add(new Vector3(xCoord, 0, zCoord));
 
-                normals.Add(Vector3.up);
-                normals.Add(Vector3.up);
-                normals.Add(Vector3.up);
-                normals.Add(Vector3.up);
+            normals.Add(Vector3.up);
+            uv.Add(new Vector2(0, 0));
 
-                uv.Add(new Vector2(0, 0));
-                uv.Add(new Vector2(0, 1));
-                uv.Add(new Vector2(1, 0));
-                uv.Add(new Vector2(1, 1));
+            // We need to determine the walls and cieling of the grid so we don't perform unecessary connections.
+            if (vertIndex % (width + 1) != width && vertIndex / (width + 1) != length)
+            {
+                triangles.Add(vertIndex + 1);
+                triangles.Add(vertIndex);
+                triangles.Add(vertIndex + width + 1);
 
-                triangles.Add(triIndex);
-                triangles.Add(triIndex + 1);
-                triangles.Add(triIndex + 2);
-                triangles.Add(triIndex + 1);
-                triangles.Add(triIndex + 3);
-                triangles.Add(triIndex + 2);
-                triIndex += 4;
+                triangles.Add(vertIndex + 1);
+                triangles.Add(vertIndex + width + 1);
+                triangles.Add(vertIndex + width + 2);
             }
         }
+
+        //Debug.Log("Vertices: " + vertices.Count + " Triangles: " + triangles.Count);
+        //Debug.Log("Expected Vertices:" + (length + 1) * (width + 1) + " Expected Triangles: " + length * width * 6);
 
         terrain.Clear();
 
