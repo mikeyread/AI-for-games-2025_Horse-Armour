@@ -17,7 +17,7 @@ public class terrainMesh : MonoBehaviour {
     private List<Vector3> vertices = new List<Vector3>();
     private List<Vector3> normals = new List<Vector3>();
     private List<Vector2> uv = new List<Vector2>();
-    private List<int> triangles = new List<int>();
+    private List<int> indices = new List<int>();
 
     // Perlin Vectors
     private List<Vector2> perlinVector = new List<Vector2>();
@@ -41,6 +41,7 @@ public class terrainMesh : MonoBehaviour {
     // https://www.cl.cam.ac.uk/teaching/1718/FGraphics/Appendix%20B%20-%20Perlin%20Noise.pdf
     // https://stackoverflow.com/questions/58241309/how-to-continuously-generate-perlin-noise-as-an-infinite-map-grows
     // https://www.youtube.com/watch?v=jv6YT9pPIHw
+    // https://www.youtube.com/watch?v=wbpMiKiSKm8
     void PerlinNoise(Vector2 normalCoord)
     {
         /*
@@ -50,6 +51,7 @@ public class terrainMesh : MonoBehaviour {
         float tlScalar = Vector2.Dot(normalCoord, perlinVector[3]);
         */
     }
+
 
     // Rotates a one length vector for use in Perlin noise.
     // Will likely need to scrap as this does not factor in a seed.
@@ -98,7 +100,7 @@ public class terrainMesh : MonoBehaviour {
     private void Update()
     {
         if (!prevLength.Equals(length) || !prevWidth.Equals(width) || !prevSize.Equals(size))
-        { 
+        {
             Debug.Log("Change Detected: Refreshing Mesh");
 
             GenerateMesh();
@@ -113,9 +115,8 @@ public class terrainMesh : MonoBehaviour {
     // We generate a mesh grid of quads using pre-defined length and width.
     private void GenerateMesh()
     {
-
         vertices.Clear();
-        triangles.Clear();
+        indices.Clear();
         uv.Clear();
         normals.Clear();
 
@@ -137,13 +138,13 @@ public class terrainMesh : MonoBehaviour {
             // We need to determine the walls and cieling of the grid so we don't perform unecessary connections.
             if (vertIndex % (width + 1) != width && vertIndex / (width + 1) != length)
             {
-                triangles.Add(vertIndex + 1);
-                triangles.Add(vertIndex);
-                triangles.Add(vertIndex + width + 1);
+                indices.Add(vertIndex + 1);
+                indices.Add(vertIndex);
+                indices.Add(vertIndex + width + 1);
 
-                triangles.Add(vertIndex + 1);
-                triangles.Add(vertIndex + width + 1);
-                triangles.Add(vertIndex + width + 2);
+                indices.Add(vertIndex + 1);
+                indices.Add(vertIndex + width + 1);
+                indices.Add(vertIndex + width + 2);
             }
         }
 
@@ -152,7 +153,7 @@ public class terrainMesh : MonoBehaviour {
         terrain.vertices = vertices.ToArray();
         terrain.normals = normals.ToArray();
         terrain.uv = uv.ToArray();
-        terrain.triangles = triangles.ToArray();
+        terrain.triangles = indices.ToArray();
 
         terrain.RecalculateBounds();
     }
