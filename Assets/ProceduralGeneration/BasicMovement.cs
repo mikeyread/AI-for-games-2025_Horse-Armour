@@ -8,9 +8,7 @@ public class BasicMovement : MonoBehaviour
 {
     private Vector3 velocity = new Vector3(0,0,0);
 
-    private static float moveSpeed = 0.002f;
-    private static float sensitivity = 1.2f;
-
+    private float moveSpeed = 0.002f;
     private CursorLockMode isLocked = CursorLockMode.Locked;
 
 
@@ -32,23 +30,52 @@ public class BasicMovement : MonoBehaviour
 
         if (isLocked != CursorLockMode.Locked) return;
 
-        float horInput = Input.GetAxisRaw("Horizontal") * moveSpeed;
-        float verInput = Input.GetAxisRaw("Vertical") * moveSpeed;
+        staticMovement();
+    }
 
-        transform.localRotation = Quaternion.Euler(horInput, 0, verInput);
 
-        Vector3 camForward = Camera.main.transform.forward;
-        Vector3 camRight = Camera.main.transform.right;
+    // Very basic locked Axis movement for testing, no camera rotation for free-look.
+    private void staticMovement()
+    {
+        if (Input.GetKey(KeyCode.W))
+        {
+            velocity += new Vector3(0, 0, moveSpeed);
+        }
+        if (Input.GetKey(KeyCode.A))
+        {
+            velocity += new Vector3(-moveSpeed, 0, 0);
+        }
+        if (Input.GetKey(KeyCode.S))
+        {
+            velocity += new Vector3(0, 0, -moveSpeed);
+        }
+        if (Input.GetKey(KeyCode.D))
+        {
+            velocity += new Vector3(moveSpeed, 0, 0);
+        }
+        if (Input.GetKey(KeyCode.Space))
+        {
+            velocity += new Vector3(0, moveSpeed, 0);
+        }
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            velocity += new Vector3(0, -moveSpeed, 0);
+        }
 
-        camForward.y = 0;
-        camRight.y = 0;
+        if (Input.mouseScrollDelta.y > 0)
+        {
+            moveSpeed *= 1.05f;
+        }
+        else if (Input.mouseScrollDelta.y < 0)
+        {
+            moveSpeed *= 0.95f;
+            if (moveSpeed < 0.000001f)
+            {
+                moveSpeed = 0.000002f;
+            }
+        }
 
-        Vector3 forwardRelative = verInput * camForward;
-        Vector3 rightRelative = verInput * camRight;
-
-        Vector3 moveDir = forwardRelative + rightRelative;
-
-        velocity = new Vector3(horInput, velocity.y, verInput);
+        velocity.Scale(new Vector3(0.99f, 0.99f, 0.99f));
 
         this.transform.Translate(velocity);
     }

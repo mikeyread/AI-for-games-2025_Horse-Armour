@@ -154,9 +154,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 20d8d91870f66c64aa7e2e231aa0fcbc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  width: 255
-  length: 255
+  width: 26
+  length: 11
   size: 10
+  perlinLength: 64
+  perlinWidth: 64
 --- !u!4 &171745584
 Transform:
   m_ObjectHideFlags: 0
@@ -165,7 +167,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 171745582}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.33, z: 0}
+  m_LocalPosition: {x: 0, y: -0.01, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

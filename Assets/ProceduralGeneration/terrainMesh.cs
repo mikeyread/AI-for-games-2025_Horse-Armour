@@ -39,12 +39,20 @@ public class terrainMesh : MonoBehaviour {
 
     // TO BE DONE
     // https://www.cl.cam.ac.uk/teaching/1718/FGraphics/Appendix%20B%20-%20Perlin%20Noise.pdf
-    void PerlinNoise(float normalCoord)
+    // https://stackoverflow.com/questions/58241309/how-to-continuously-generate-perlin-noise-as-an-infinite-map-grows
+    // https://www.youtube.com/watch?v=jv6YT9pPIHw
+    void PerlinNoise(Vector2 normalCoord)
     {
-
+        /*
+        float brScalar = Vector2.Dot(normalCoord, perlinVector[0]);
+        float blScalar = Vector2.Dot(normalCoord, perlinVector[1]);
+        float trScalar = Vector2.Dot(normalCoord, perlinVector[2]);
+        float tlScalar = Vector2.Dot(normalCoord, perlinVector[3]);
+        */
     }
 
     // Rotates a one length vector for use in Perlin noise.
+    // Will likely need to scrap as this does not factor in a seed.
     private static Vector2 normalisedRandomVector()
     {
         float angle = Random.Range(0, math.PI * 2);
@@ -55,15 +63,18 @@ public class terrainMesh : MonoBehaviour {
         return new Vector2(rotX, rotY);
     }
 
-    // Finds the normalised coords of a point on the whole map. Will refactor later (maybe).
-    private Vector2 normalisedCoordinate(int x, int z)
+    /*
+    private Vector2 normalisedCoordinate(float x, float z)
     {
+        // Calculate bounds
+
         float normalX = (float)x / (float)width;
         float normalZ = (float)z / (float)length;
         Debug.Log("Map X fraction: " + normalX + " Map Z fraction: " + normalZ);
 
         return new Vector2(normalX, normalZ);
     }
+    */
 
     private void OnEnable()
     {
@@ -79,6 +90,7 @@ public class terrainMesh : MonoBehaviour {
         this.GetComponent<MeshFilter>().mesh = terrain;
         this.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Universal Render Pipeline/Simple Lit"));
         GenerateMesh();
+        GeneratePerlin();
     }
 
 
@@ -90,6 +102,7 @@ public class terrainMesh : MonoBehaviour {
             Debug.Log("Change Detected: Refreshing Mesh");
 
             GenerateMesh();
+            GeneratePerlin();
             prevLength = length;
             prevWidth = width;
             prevSize = size;
@@ -100,10 +113,6 @@ public class terrainMesh : MonoBehaviour {
     // We generate a mesh grid of quads using pre-defined length and width.
     private void GenerateMesh()
     {
-        perlinVector.Add(normalisedRandomVector());
-        perlinVector.Add(normalisedRandomVector());
-        perlinVector.Add(normalisedRandomVector());
-        perlinVector.Add(normalisedRandomVector());
 
         vertices.Clear();
         triangles.Clear();
@@ -138,9 +147,6 @@ public class terrainMesh : MonoBehaviour {
             }
         }
 
-        //Debug.Log("Vertices: " + vertices.Count + " Triangles: " + triangles.Count);
-        //Debug.Log("Expected Vertices:" + (length + 1) * (width + 1) + " Expected Triangles: " + length * width * 6);
-
         terrain.Clear();
 
         terrain.vertices = vertices.ToArray();
@@ -149,5 +155,42 @@ public class terrainMesh : MonoBehaviour {
         terrain.triangles = triangles.ToArray();
 
         terrain.RecalculateBounds();
+    }
+
+
+    // Generates coordinates of a Perlin grid, will likely scrap as Perlin should be a virtual infinite grid that isn't bound within an area.
+    private void GeneratePerlin()
+    {
+        if (vertices == null) return;
+
+        // Calculates the bounding area for the perlin grid
+        int lastIndex = vertices.Count - 1;
+
+        Vector3 bounds = new Vector3(Mathf.Abs(vertices[0].x), Mathf.Abs(vertices[0].y), Mathf.Abs(vertices[0].z)) + new Vector3(Mathf.Abs(vertices[lastIndex].x), Mathf.Abs(vertices[lastIndex].y), Mathf.Abs(vertices[lastIndex].z));
+        Debug.Log("Bound Size: " + bounds);
+    }
+
+
+
+
+    private void OnDrawGizmos()
+    {
+        if (vertices == null) return;
+        if (perlinVector == null) return;
+
+
+        /* Rendering the perlin corner vectors to check if they are actually random
+        
+        Vector3 localPerlinBL = vertices[0] + new Vector3(perlinVector[0].x, 0, perlinVector[0].y);
+        Vector3 localPerlinBR = vertices[width] + new Vector3(perlinVector[1].x, 0, perlinVector[1].y);
+        Vector3 localPerlinTL = vertices[(width + 1) * (length + 1) - (width + 1)] + new Vector3(perlinVector[2].x, 0, perlinVector[2].y);
+        Vector3 localPerlinTR = vertices[(width + 1) * (length + 1) - 1] + new Vector3(perlinVector[3].x, 0, perlinVector[3].y);
+        
+        Gizmos.color = Color.blue;
+        Gizmos.DrawLine(vertices[0], localPerlinBL);
+        Gizmos.DrawLine(vertices[width], localPerlinBR);
+        Gizmos.DrawLine(vertices[(width + 1) * (length + 1) - (width + 1)], localPerlinTL);
+        Gizmos.DrawLine(vertices[(width + 1) * (length + 1) - 1], localPerlinTR);
+        */
     }
 }
