@@ -394,6 +394,11 @@ PrefabInstance:
         type: 3}
     - target: {fileID: 653278438990010896, guid: 57dff86065287cf4fb0ef3737f15470f,
         type: 3}
+      propertyPath: detectionRadius
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 653278438990010896, guid: 57dff86065287cf4fb0ef3737f15470f,
+        type: 3}
       propertyPath: flock.Array.size
       value: 60
       objectReference: {fileID: 0}
@@ -410,17 +415,17 @@ PrefabInstance:
     - target: {fileID: 3484339118728340045, guid: 57dff86065287cf4fb0ef3737f15470f,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.524
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3484339118728340045, guid: 57dff86065287cf4fb0ef3737f15470f,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.657
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3484339118728340045, guid: 57dff86065287cf4fb0ef3737f15470f,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 13.801942
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3484339118728340045, guid: 57dff86065287cf4fb0ef3737f15470f,
         type: 3}
