@@ -7,6 +7,7 @@ public class Chunk
     float offset = 1;
     int chunkScale = 4;
 
+
     GameObject chunk;
     Mesh terrain;
 
@@ -30,14 +31,18 @@ public class Chunk
             {
                 vertices.Add(new Vector3(x, 0, z));
 
-                if (z <= chunkScale && x <= chunkScale)
+                if (z < chunkScale && x < chunkScale)
                 {
                     indices.Add(x + 1 + z * chunkScale);
                     indices.Add(x + z * chunkScale);
-                    indices.Add(x + chunkScale + z * chunkScale);
+                    indices.Add(x + z * chunkScale + 1);
+
                 }
             }
         }
+
+        // x = 3 z = 3
+        // 13, 15 - need plus 3.
 
         terrain.vertices = vertices.ToArray();
         terrain.triangles = indices.ToArray();
