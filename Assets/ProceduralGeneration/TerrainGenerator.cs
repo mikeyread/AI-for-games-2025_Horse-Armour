@@ -16,6 +16,10 @@ public class TerrainGenerator : MonoBehaviour
     [Tooltip("Sets the distance between vertices")]
     [SerializeField][Range(0.001f, 1)] float scale = 0.5f;
 
+    [SerializeField][Range(2, 256)] private int perlinHeight = 16;
+    [SerializeField][Range(2, 256)] private int perlinWidth = 16;
+
+
     [SerializeField][Range(0.001f, 1)] float blWeight = 1;
     [SerializeField][Range(0.001f, 1)] float brWeight = 1;
     [SerializeField][Range(0.001f, 1)] float tlWeight = 1;
@@ -27,7 +31,7 @@ public class TerrainGenerator : MonoBehaviour
     float trPreviousWeight = 1;
 
 
-    private static Vector2 randomVector()
+    private static Vector2 RandomVector()
     {
         Vector2 unitVector = new Vector2(0, 1);
         float random = Random.Range(0, math.PI * 2);
@@ -54,6 +58,20 @@ public class TerrainGenerator : MonoBehaviour
         return Grid;
     }
 
+    private static Vector2[,] GeneratePerlin(int gridWidth, int gridHeight)
+    {
+        Vector2[,] Grid = new Vector2[gridWidth, gridHeight];
+        for (int z = 0; z < gridHeight; z++)
+        {
+            for (int x = 0; x < gridWidth; x++)
+            {
+                Grid[z, x] = RandomVector();
+            }
+        }
+
+        return Grid;
+    }
+
 
     private static Vector2[,] normaliseCoords(int gridWidth, int gridHeight)
     {
@@ -70,13 +88,18 @@ public class TerrainGenerator : MonoBehaviour
         return Grid;
     }
 
-    private static float Perlin(Vector2 normal, Vector2[] PerlinCorners)
+    private static float Perlin(Vector2 normal, Vector2[,] PerlinCorners, int PerlinWidth, int PerlinHeight)
     {
+        int x = (int)MathF.Floor(normal.x * PerlinWidth);
+        int y = (int)MathF.Floor(normal.y * PerlinWidth);
 
-        float BLScaler = Vector2.Dot(normal, PerlinCorners[0]);
-        float BRScaler = Vector2.Dot(normal, PerlinCorners[1]);
-        float TLScaler = Vector2.Dot(normal, PerlinCorners[2]);
-        float TRScaler = Vector2.Dot(normal, PerlinCorners[3]);
+        // recalculate normal in context of grid
+
+
+        float BLScaler = Vector2.Dot(normal, PerlinCorners[x,y]);
+        float BRScaler = Vector2.Dot(normal, PerlinCorners[x + 1,y]);
+        float TLScaler = Vector2.Dot(normal, PerlinCorners[x,y + 1]);
+        float TRScaler = Vector2.Dot(normal, PerlinCorners[x + 1,y + 1]);
 
         //Debug.Log("Scalers BL: " + BLScaler + " BR: " + BRScaler + " TL: " + TLScaler + " TR: " + TRScaler);
         return BLScaler * BRScaler * TLScaler * TRScaler;
@@ -84,17 +107,11 @@ public class TerrainGenerator : MonoBehaviour
 
     private Vector3[,] quadGrid;
     private Vector2[,] normalisedGrid;
-    private Vector2[] PerlinCorners;
-    private Vector2[] PerlinWeightedCorners;
+    private Vector2[,] PerlinCorners;
 
     private void Start()
     {
-        PerlinCorners = new Vector2[] {
-            randomVector(),
-            randomVector(),
-            randomVector(),
-            randomVector()
-        };
+        PerlinCorners = GeneratePerlin(perlinWidth, perlinHeight);
 
         Generate();
     }
@@ -109,19 +126,6 @@ public class TerrainGenerator : MonoBehaviour
 
     private void Generate()
     {
-        blPreviousWeight = blWeight;
-        brPreviousWeight = brWeight;
-        tlPreviousWeight = tlWeight;
-        trPreviousWeight = trWeight;
-
-        PerlinWeightedCorners = new Vector2[]
-        {
-            Vector2.Scale(PerlinCorners[0], new Vector2(blWeight,blWeight)),
-            Vector2.Scale(PerlinCorners[1], new Vector2(brWeight,brWeight)),
-            Vector2.Scale(PerlinCorners[2], new Vector2(tlWeight,tlWeight)),
-            Vector2.Scale(PerlinCorners[3], new Vector2(trWeight,trWeight))
-        };
-
         quadGrid = GenerateGrid(width, height, scale);
         normalisedGrid = normaliseCoords(width, height);
 
@@ -129,7 +133,8 @@ public class TerrainGenerator : MonoBehaviour
         {
             for (int x = 0; x < quadGrid.GetLength(1); x++)
             {
-                quadGrid[z, x] = new Vector3(quadGrid[z, x].x, Perlin(normalisedGrid[z, x], PerlinWeightedCorners) * 5, quadGrid[z, x].z);
+                //quadGrid[z, x] = new Vector3(quadGrid[z, x].x, Perlin(normalisedGrid[z, x], PerlinWeightedCorners) * 5, quadGrid[z, x].z);
+                quadGrid[z, x] = new Vector3(quadGrid[z, x].x, Perlin(normalisedGrid[z,x], PerlinCorners, perlinWidth, perlinHeight) * 250, quadGrid[z, x].z);
             }
         }
     }
