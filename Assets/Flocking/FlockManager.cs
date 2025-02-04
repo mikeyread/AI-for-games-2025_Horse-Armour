@@ -32,30 +32,30 @@ public class FlockingManager : MonoBehaviour
     void Update()
     {
         //Calculating average position of every cube
-        Vector3 averagePosition = new Vector3 (0,0,0);
-        foreach (var entity in flock)
-        {
+        //Vector3 averagePosition = new Vector3 (0,0,0);
+        //foreach (var entity in flock)
+        //{
 
-            //This could probably work, but would need to move functionality into each entitiy instead of it being in the manager
-            foreach (var otherEntitiy in flock)
-            {
-                if ((entity != otherEntitiy) && ((entity.transform.position - otherEntitiy.transform.position).magnitude < detectionRadius))
-                {
-                    averagePosition += entity.transform.position;
-                }
-            }
+        //    //This could probably work, but would need to move functionality into each entitiy instead of it being in the manager
+        //    foreach (var otherEntitiy in flock)
+        //    {
+        //        if ((entity != otherEntitiy) && ((entity.transform.position - otherEntitiy.transform.position).magnitude < detectionRadius))
+        //        {
+        //            averagePosition += entity.transform.position;
+        //        }
+        //    }
 
 
-            //averagePosition += entity.transform.position;
-        }
-        centrePosition = averagePosition / flock.Length;
-        Debug.Log(centrePosition);
+        //    //averagePosition += entity.transform.position;
+        //}
+        //centrePosition = averagePosition / flock.Length;
+        ////Debug.Log(centrePosition);
 
-        Coherence();
+        //Coherence();
 
-        Seperation();
+        //Seperation();
 
-        Alignment();
+        //Alignment();
 
 
 
@@ -79,7 +79,7 @@ public class FlockingManager : MonoBehaviour
             Vector3 unitVecTowardsCentre = (1 / (centrePosition - entity.transform.position).magnitude) * (centrePosition - entity.transform.position);
 
             //Adding an impulse to head towards the centre
-            entity.rBody.AddForce(unitVecTowardsCentre);
+            //entity.rBody.AddForce(unitVecTowardsCentre);
             //Debug.Log(unitVecTowardsCentre);
         }
 
