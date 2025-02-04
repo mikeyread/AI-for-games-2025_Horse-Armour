@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+//using System;       //Used for array functions like .Clear
 
 
 public class FlockingEntity : MonoBehaviour
@@ -11,6 +11,9 @@ public class FlockingEntity : MonoBehaviour
     public Rigidbody rBody;
     public FlockingManager manager;
     private float DetectionRadius = 20;
+
+
+
 
     private float distBetween = 0;
 
@@ -25,10 +28,19 @@ public class FlockingEntity : MonoBehaviour
         Blue = 2,
         Magenta = 3
     };
-    
+
+    //Function to return random value from a given enum (used for colour randomization)
+    //void randomColour()
+    //{
+    //    Random rnd = new Random();
+    //    int test = rnd.Next(0, 10);
+    //}
 
 
+    private colour ownColour = colour.Magenta;
 
+
+    private colour[] nearbyMembersColour;
 
 
     //Amount of flock members nearby
@@ -41,7 +53,26 @@ public class FlockingEntity : MonoBehaviour
     void Start()
     {
         ren = GetComponent<Renderer>();
-        ren.material.color=Color.blue;
+
+        //ownColour = RandomEnumValue<colour>();
+
+        //switch (ownColour)
+        //{
+        //    case colour.Red:
+        //        {
+        //            ren.material.color = Color.red;
+        //            break;
+        //        }
+        //}
+
+
+
+        ren.material.color = Color.blue;
+
+
+
+
+
     }
 
     // Update is called once per frame
@@ -51,6 +82,7 @@ public class FlockingEntity : MonoBehaviour
         positionAverage = Vector3.zero;
         amountNearby = 0;
 
+        //Array.Clear(nearbyMembers, 0, nearbyMembers.Length);
 
         foreach(var entity in manager.flock)
         {
@@ -59,7 +91,11 @@ public class FlockingEntity : MonoBehaviour
             distBetween = Vector3.Distance(entity.transform.position, transform.position);
             if ((entity != this) && (distBetween < DetectionRadius))
                 {
+
+                //earbyMembersColour[amountNearby] = entity.ownColour;
+                
                 positionAverage += entity.transform.position;
+
 
                 ren.material.color = Color.red;
                 amountNearby++;
