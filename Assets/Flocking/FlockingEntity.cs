@@ -6,15 +6,22 @@ using UnityEngine;
 
 public class FlockingEntity : MonoBehaviour
 {
+    //Renderer to change objects colour
     Renderer ren;
-
+    
+    //Rigidbody component to allow easier implementation of movement (essentially just so I can use .AddForce();
     public Rigidbody rBody;
+    //To store the reference to the flock manager
     public FlockingManager manager;
+    //Radius in which the members can see eachother
     private float DetectionRadius = 20;
 
+    //hm
+    private Vector3 direction = Vector3.zero;
+    private Quaternion rotationQuat = new Quaternion (0f,0f,0f,1f);
 
-
-
+    
+    //Distance between this and another entity
     private float distBetween = 0;
 
 
@@ -38,7 +45,6 @@ public class FlockingEntity : MonoBehaviour
 
 
     private colour ownColour = colour.Magenta;
-
 
     private colour[] nearbyMembersColour;
 
@@ -67,12 +73,8 @@ public class FlockingEntity : MonoBehaviour
 
 
 
+
         ren.material.color = Color.blue;
-
-
-
-
-
     }
 
     // Update is called once per frame
@@ -82,7 +84,6 @@ public class FlockingEntity : MonoBehaviour
         positionAverage = Vector3.zero;
         amountNearby = 0;
 
-        //Array.Clear(nearbyMembers, 0, nearbyMembers.Length);
 
         foreach(var entity in manager.flock)
         {
@@ -92,29 +93,46 @@ public class FlockingEntity : MonoBehaviour
             if ((entity != this) && (distBetween < DetectionRadius))
                 {
 
-                //earbyMembersColour[amountNearby] = entity.ownColour;
-                
-                positionAverage += entity.transform.position;
+                //nearbyMembersColour[amountNearby] = entity.ownColour;
 
 
-                ren.material.color = Color.red;
-                amountNearby++;
-                //Debug.Log("Distance to other: " + Vector3.Distance(entity.transform.position, transform.position));
+                //For some reason the members seem to gravitate (not with gravity) heading downwards?
+                if (distBetween >= DetectionRadius - 15)
+                {
+                    positionAverage += entity.transform.position;
+                }
+                else
+                {
+                    //Seperation
+                    positionAverage -= entity.transform.position;  
                 }
 
 
+
+                //Setting colour to show it is following another entity
+                ren.material.color = Color.red;
+
+                
+                amountNearby++;
+                //Debug.Log("Distance to other: " + Vector3.Distance(entity.transform.position, transform.position));
+            }
+
+
         }
 
-        positionAverage = positionAverage / amountNearby;
-
-
-        //Cohesion
-        Vector3 unitVecTowardsCentre = (1 / (positionAverage - transform.position).magnitude * (positionAverage - transform.position));
-
-        if (unitVecTowardsCentre != null)
+        //Finding average position of all members nearby
+        if (amountNearby != 0)
         {
+            positionAverage = positionAverage / amountNearby;
+            Vector3 unitVecTowardsCentre = (1 / (positionAverage - transform.position).magnitude * (positionAverage - transform.position));
+
+
+
+            rBody.MoveRotation(Quaternion.LookRotation(unitVecTowardsCentre, Vector3.up));
             rBody.AddForce(unitVecTowardsCentre);
         }
+        Debug.Log(positionAverage);
+
 
     }
 }

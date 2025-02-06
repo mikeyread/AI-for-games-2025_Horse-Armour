@@ -400,7 +400,7 @@ PrefabInstance:
     - target: {fileID: 653278438990010896, guid: 57dff86065287cf4fb0ef3737f15470f,
         type: 3}
       propertyPath: flock.Array.size
-      value: 30
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 1906578229543274270, guid: 57dff86065287cf4fb0ef3737f15470f,
         type: 3}
@@ -420,7 +420,7 @@ PrefabInstance:
     - target: {fileID: 3484339118728340045, guid: 57dff86065287cf4fb0ef3737f15470f,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 130.3
       objectReference: {fileID: 0}
     - target: {fileID: 3484339118728340045, guid: 57dff86065287cf4fb0ef3737f15470f,
         type: 3}
