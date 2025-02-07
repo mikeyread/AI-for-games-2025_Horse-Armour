@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,38 +5,70 @@ using static WorldOptions;
 using Random = UnityEngine.Random;
 
 
-// Handles management of all in-scene chunks.
+// Handles management of all chunks in the world.
 public class WorldGenerator : MonoBehaviour
 {
     [SerializeField] int seed;
 
-    List<Chunk> chunks;
+    private Dictionary<Vector2, Chunk> chunkBuffer;
     private PerlinNoise2D noise;
+
 
     private void Awake()
     {
         if (seed != 0) Random.InitState(seed);
-
         noise = new PerlinNoise2D();
-        chunks = new List<Chunk>();
 
-
-        chunks.Add(new Chunk(new Vector3(0,0,0)));
-        chunks.Add(new Chunk(new Vector3(0,0,1)));
+        chunkBuffer = new Dictionary<Vector2, Chunk>();
     }
 
-    private void Start()
+
+    // Generates new chunk terrain while skipping any already existing chunks.
+    private void RegenerateChunks()
     {
-        chunks[0].GenerateMesh(noise);
-        chunks[1].GenerateMesh(noise);
+        foreach (var chunk in chunkBuffer) {
+            if (chunk.Value.generated) continue;
+
+            chunk.Value.GenerateMesh(noise);
+        }
     }
 
-    // TODO: Automatic Chunk Generation.
+    // Unloads all chunks outside of the players Render Distance.
+    private void UnloadChunks(Vector2 position)
+    {
+        List<Vector2> toUnload = new List<Vector2>();
+        foreach (var chunk in chunkBuffer)
+        {
+            if (chunk.Key == position) continue;
+            
+            toUnload.Add(chunk.Key);
+        }
+
+        foreach (var destroy in toUnload)
+        {
+            chunkBuffer[destroy].Unload();
+        }
+    }
+
+
+    // TODO: Automatic Chunk Generation within a defined render distance.
     // https://www.redblobgames.com/grids/circle-drawing/
     private void Update()
     {
-        // Normalizes player in respect to the chun
+        // Normalizes player position in respect to the chunk grid.
         Vector3 playerPos = Camera.main.transform.position / (CHUNK_QUAD_SCALAR * CHUNK_QUAD_AMOUNT);
-        Debug.Log(playerPos);
+        Vector2 floored = new Vector2(Mathf.Floor(playerPos.x), Mathf.Floor(playerPos.z));
+
+        if (!chunkBuffer.ContainsKey(floored))
+        {
+            chunkBuffer.Add(floored, new Chunk(new Vector3(floored.x, 0 ,floored.y)));
+            RegenerateChunks();
+        }
+        else
+        {
+            chunkBuffer[floored].Reload();
+        }
+
+        UnloadChunks(floored);
     }
 }

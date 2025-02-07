@@ -4,10 +4,10 @@ using UnityEngine;
 using static WorldOptions;
 
 
-// Object which contains data based forming a region of terrain, including mesh generation.
+// Chunks are mesh and collision regions which form a unified terrain, including mesh generation and loading/unloading tasks.
 public class Chunk {
 
-    private GameObject chunk;
+    public GameObject chunk;
     private Mesh terrain;
 
     private List<Vector3> vertices;
@@ -15,6 +15,8 @@ public class Chunk {
 
     private const float frequency = 1f;
     private const float amplitude = 1f;
+
+    public bool generated = false;
 
     public Chunk(Vector3 position)
     {
@@ -29,8 +31,11 @@ public class Chunk {
         chunk.transform.position = offset;
     }
 
+
     public void GenerateMesh(PerlinNoise2D noise)
     {
+        if (generated) return;
+
         vertices = new List<Vector3>();
         indices = new List<int>();
 
@@ -38,6 +43,7 @@ public class Chunk {
         {
             for (int x = 0; x < CHUNK_QUAD_AMOUNT + 1; x++)
             {
+                // TODO: Fix Noise
                 float trueX = (chunk.transform.position.x - chunk.transform.position.x * CHUNK_QUAD_SCALAR * CHUNK_QUAD_AMOUNT) + x;
                 float trueZ = (chunk.transform.position.z - chunk.transform.position.z * CHUNK_QUAD_SCALAR * CHUNK_QUAD_AMOUNT) + z;
                 float y = noise.Perlin2D(trueX * frequency, trueZ * frequency) * amplitude;
@@ -59,14 +65,23 @@ public class Chunk {
             }
         }
 
-        Debug.Log("Position: " + chunk.transform.position);
-        Debug.Log("Local Position: " + chunk.transform.localPosition);
-
         terrain.Clear();
 
         terrain.vertices = vertices.ToArray();
         terrain.triangles = indices.ToArray();
 
         chunk.GetComponent<MeshFilter>().mesh = terrain;
+
+        generated = true;
+    }
+
+    public void Reload()
+    {
+        chunk.SetActive(true);
+    }
+
+    public void Unload()
+    {
+        chunk.SetActive(false);
     }
 }
