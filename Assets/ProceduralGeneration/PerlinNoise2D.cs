@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -8,8 +9,11 @@ using UnityEngine.UIElements;
 // Basal level, allows infinite perlin grid generation taking in the X and Z coordinates on the grid as the offset.
 public class PerlinNoise2D
 {
+    // Hash contains a randomly generated table of values.
     static float[] hash = new float[tableSize * tableSize];
 
+    const int tableSize = 256;
+    const int maxTableSize = tableSize - 1;
 
     static PerlinNoise2D()
     {
@@ -19,6 +23,18 @@ public class PerlinNoise2D
         }
     }
 
+    static float perlinStep(float t)
+    {
+        return t * t * (3 - 2 * t);
+    }
+
+    static float perlinLerp(float lo, float t, float hi)
+    {
+        return lo * (1 - t) + hi * t;
+    }
+
+
+    // Aquires the values found at a specified x and z coordinate.
     public float Perlin2D(float x, float z)
     {
         // Search the x and z coordinate position.
@@ -42,11 +58,13 @@ public class PerlinNoise2D
         float c11 = hash[rz1 * maxTableSize + rx1];
 
         // Remapping and Interpolation here
-        //
+        float sx = perlinStep(tx);
+        float sz = perlinStep(tz);
 
-        return c00 * c10 * c01 * c11;
+        float nx0 = perlinLerp(c00, c10, sx);
+        float nx1 = perlinLerp(c01, c11, sx);
+
+
+        return perlinLerp(nx0, nx1, sz);
     }
-
-    const int tableSize = 256;
-    const int maxTableSize = tableSize - 1;
 }
