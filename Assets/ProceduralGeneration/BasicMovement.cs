@@ -8,7 +8,7 @@ public class BasicMovement : MonoBehaviour
 {
     private Vector3 velocity = new Vector3(0,0,0);
 
-    private float moveSpeed = 0.002f;
+    private float moveSpeed = 10f;
     private CursorLockMode isLocked = CursorLockMode.Locked;
 
 
@@ -39,32 +39,32 @@ public class BasicMovement : MonoBehaviour
     {
         if (Input.GetKey(KeyCode.W))
         {
-            velocity += new Vector3(0, 0, moveSpeed);
+            velocity += new Vector3(0, 0, moveSpeed) * Time.deltaTime;
         }
         if (Input.GetKey(KeyCode.A))
         {
-            velocity += new Vector3(-moveSpeed, 0, 0);
+            velocity += new Vector3(-moveSpeed, 0, 0) * Time.deltaTime;
         }
         if (Input.GetKey(KeyCode.S))
         {
-            velocity += new Vector3(0, 0, -moveSpeed);
+            velocity += new Vector3(0, 0, -moveSpeed) * Time.deltaTime;
         }
         if (Input.GetKey(KeyCode.D))
         {
-            velocity += new Vector3(moveSpeed, 0, 0);
+            velocity += new Vector3(moveSpeed, 0, 0) * Time.deltaTime;
         }
         if (Input.GetKey(KeyCode.Space))
         {
-            velocity += new Vector3(0, moveSpeed, 0);
+            velocity += new Vector3(0, moveSpeed, 0) * Time.deltaTime;
         }
         if (Input.GetKey(KeyCode.LeftShift))
         {
-            velocity += new Vector3(0, -moveSpeed, 0);
+            velocity += new Vector3(0, -moveSpeed, 0) * Time.deltaTime;
         }
 
         if (Input.mouseScrollDelta.y > 0)
         {
-            moveSpeed *= 1.05f;
+            moveSpeed *= 1.05f * Time.deltaTime;
         }
         else if (Input.mouseScrollDelta.y < 0)
         {
@@ -77,6 +77,6 @@ public class BasicMovement : MonoBehaviour
 
         velocity.Scale(new Vector3(0.99f, 0.99f, 0.99f));
 
-        this.transform.Translate(velocity);
+        this.transform.position +=  velocity * Time.deltaTime;
     }
 }

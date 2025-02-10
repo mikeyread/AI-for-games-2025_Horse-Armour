@@ -18,6 +18,7 @@ public class Chunk {
 
     public bool generated = false;
 
+
     public Chunk(Vector3 position)
     {
         chunk = new GameObject("World Chunk");
