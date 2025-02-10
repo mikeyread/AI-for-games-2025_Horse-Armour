@@ -27,15 +27,19 @@ public class WorldGenerator : MonoBehaviour
     }
 
 
+    private Vector2 lastPosition;
     private void Update()
     {
         // Normalizes player position in respect to the chunk grid.
         Vector3 playerPos = Camera.main.transform.position / (CHUNK_QUAD_SCALAR * CHUNK_QUAD_AMOUNT);
-        Vector2 floored = new Vector2(Mathf.Floor(playerPos.x), Mathf.Floor(playerPos.z));
+        Vector2 flooredPos = new Vector2(Mathf.Floor(playerPos.x), Mathf.Floor(playerPos.z));
 
-        GenerateChunks(floored);
+        //if (lastPosition == floored) return;
 
-        UnloadChunks(floored);
+        GenerateChunks(flooredPos);
+        UnloadChunks(flooredPos);
+
+        lastPosition = flooredPos;
     }
 
 
@@ -61,13 +65,14 @@ public class WorldGenerator : MonoBehaviour
         {
             if (chunk.Value.generated) continue;
 
-            chunk.Value.GenerateMesh(noise);
+            chunk.Value.GenerateMesh();
         }
     }
 
+
     private void UnloadChunks(Vector2 position)
     {
-        // Uses a ToRender List to define all of the positions within the render distance that are within the render distance of the player.
+        // Uses a ToRender List to define all of the positions within the render distance of the player.
         List<Vector2> toRender = new List<Vector2>();
         for (int bx = 0; bx < RENDER_DISTANCE * 2 + 1; bx++)
         {

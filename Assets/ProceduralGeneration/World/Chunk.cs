@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 using static WorldOptions;
@@ -9,12 +10,6 @@ public class Chunk {
 
     public GameObject chunk;
     private Mesh terrain;
-
-    private List<Vector3> vertices;
-    private List<int> indices;
-
-    private const float frequency = 1f;
-    private const float amplitude = 1f;
 
     public bool generated = false;
 
@@ -33,21 +28,38 @@ public class Chunk {
     }
 
 
-    public void GenerateMesh(PerlinNoise2D noise)
+    public void GenerateMesh()
     {
         if (generated) return;
 
-        vertices = new List<Vector3>();
-        indices = new List<int>();
+        List<Vector3> vertices = new List<Vector3>();
+        List<Vector3> normals = new List<Vector3>();
+        List<int> indices = new List<int>();
+
+        float cornerX = chunk.transform.position.x - CHUNK_QUAD_AMOUNT / 2;
+        float cornerZ = chunk.transform.position.z - CHUNK_QUAD_AMOUNT / 2;
 
         for (int z = 0; z < CHUNK_QUAD_AMOUNT + 1; z++)
         {
             for (int x = 0; x < CHUNK_QUAD_AMOUNT + 1; x++)
             {
-                // TODO: Fix Noise
-                float trueX = (chunk.transform.position.x - chunk.transform.position.x * CHUNK_QUAD_SCALAR * CHUNK_QUAD_AMOUNT) + x;
-                float trueZ = (chunk.transform.position.z - chunk.transform.position.z * CHUNK_QUAD_SCALAR * CHUNK_QUAD_AMOUNT) + z;
-                float y = noise.Perlin2D(trueX * frequency, trueZ * frequency) * amplitude;
+                float trueX = cornerX + (x * CHUNK_QUAD_SCALAR);
+                float trueZ = cornerZ + (z * CHUNK_QUAD_SCALAR);
+
+
+                float y = 0;
+                if (PerlinNoise2D._Noise2D == null)
+                {
+                    Debug.Log("No Noise Array!");
+
+                    y = 1;
+                }
+                else {
+                    //Debug.Log(PerlinNoise2D._Noise2D.Length);
+                    //Debug.Log(PerlinNoise2D._Noise2D[0,0]);
+
+                    y = PerlinNoise2D.FractalSum(trueX, trueZ, 6, 0.33f, 64);
+                }
 
                 vertices.Add(new Vector3(x * CHUNK_QUAD_SCALAR, y, z * CHUNK_QUAD_SCALAR));
 
@@ -66,12 +78,22 @@ public class Chunk {
             }
         }
 
+        // Vertex Normals
+        // Find cross product between neighboring indices
+        for(int i = 0; i < vertices.Count; i++)
+        {
+
+            normals.Add(new Vector3(0,1,0));
+        }
+
         terrain.Clear();
 
         terrain.vertices = vertices.ToArray();
         terrain.triangles = indices.ToArray();
+        terrain.normals = normals.ToArray();
 
         chunk.GetComponent<MeshFilter>().mesh = terrain;
+        chunk.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
 
         generated = true;
     }

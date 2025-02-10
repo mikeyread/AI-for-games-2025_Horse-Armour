@@ -5,66 +5,80 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 
-// Perlin noise implementation taken from: https://www.scratchapixel.com/lessons/procedural-generation-virtual-worlds/procedural-patterns-noise-part-1/creating-simple-2D-noise.html
 // Basal level, allows infinite perlin grid generation taking in the X and Z coordinates on the grid as the offset.
 public class PerlinNoise2D
 {
-    // Hash contains a randomly generated table of values.
-    static float[] hash = new float[tableSize * tableSize];
+    const int noiseQuality = 256;
+    const int noiseIterator = noiseQuality - 1;
 
-    const int tableSize = 256;
-    const int maxTableSize = tableSize - 1;
+    // Hash contains a randomly generated table of values.
+    public static float[,] _Noise2D = new float[noiseQuality, noiseQuality];
+
 
     static PerlinNoise2D()
     {
-        for (int k = 0; k < tableSize * tableSize; k++)
+        _Noise2D = new float[noiseQuality, noiseQuality];
+        for (int noiseX = 0; noiseX < noiseIterator; noiseX++)
         {
-            hash[k] = Random.value;
+            for (int noiseY = 0; noiseY < noiseIterator; noiseY++)
+            {
+                _Noise2D[noiseX, noiseY] = Random.value;
+            }
         }
     }
 
-    static float perlinStep(float t)
+    public static float perlinLerp(float x1, float x2, float i)
     {
-        return t * t * (3 - 2 * t);
-    }
-
-    static float perlinLerp(float lo, float t, float hi)
-    {
-        return lo * (1 - t) + hi * t;
+        return (1 - i) * x1 + i * x2;
     }
 
 
-    // Aquires the values found at a specified x and z coordinate.
-    public float Perlin2D(float x, float z)
+    // Smooths any normalized value (0 to 1).
+    public static float Smooth(float value)
     {
-        // Search the x and z coordinate position.
-        int xi = (int)Mathf.Floor(x);
-        int zi = (int)Mathf.Floor(z);
-
-        // Finds the left and bottom corners of the noise Grid.
-        float tx = x - xi;
-        float tz = z - zi;
-
-        // Find the corners of the internal Perlin grid.
-        int rx0 = xi & maxTableSize;
-        int rx1 = (rx0 + 1) & maxTableSize;
-        int rz0 = zi & maxTableSize;
-        int rz1 = (rz0 + 1) & maxTableSize;
-
-        // Values of the perlin corners
-        float c00 = hash[rz0 * maxTableSize + rx0];
-        float c10 = hash[rz0 * maxTableSize + rx1];
-        float c01 = hash[rz1 * maxTableSize + rx0];
-        float c11 = hash[rz1 * maxTableSize + rx1];
-
-        // Remapping and Interpolation here
-        float sx = perlinStep(tx);
-        float sz = perlinStep(tz);
-
-        float nx0 = perlinLerp(c00, c10, sx);
-        float nx1 = perlinLerp(c01, c11, sx);
+        return Mathf.Clamp(Mathf.Pow(value, 2) * 3 - Mathf.Pow(value, 3) * 2, 0, 1);
+    }
 
 
-        return perlinLerp(nx0, nx1, sz);
+    // Iterates through multiple noise functions and tallies up the result, then normalises it by the theoretically highest value possible.
+    public static float FractalSum(float xPos, float yPos, int octaves, float frequency, float scale)
+    {
+        float sum = 0;
+        float highestSum = 0;
+
+        for (int i = 0; i < octaves; i++)
+        {
+            sum += Noise2D(xPos * frequency, yPos * frequency) * scale;
+
+            highestSum += scale;
+            frequency *= 2f;
+            scale /= 2f;
+        }
+
+        return sum / highestSum;
+    }
+
+
+    // Calculates a 2D noise value using a specified x and y coordinate.
+    public static float Noise2D(float xPos, float yPos)
+    {
+        int flooredX = Mathf.Abs((int)Mathf.Floor(xPos));
+        int flooredY = Mathf.Abs((int)Mathf.Floor(yPos));
+
+        //Debug.Log(flooredX % noiseIterator);
+        //Debug.Log(flooredY % noiseIterator);
+
+        float bottomLeftCorner  = _Noise2D[  flooredX % noiseIterator,         flooredY % noiseIterator];
+        float bottomRightCorner = _Noise2D[ (flooredX + 1) % noiseIterator,    flooredY % noiseIterator];
+        float topLeftCorner     = _Noise2D[  flooredX % noiseIterator,        (flooredY + 1) % noiseIterator];
+        float topRightCorner    = _Noise2D[ (flooredX + 1) % noiseIterator,   (flooredY + 1) % noiseIterator];
+
+        float InterpolatedX = Smooth(xPos - flooredX);
+        float InterpolatedY = Smooth(yPos - flooredY);
+
+        float xLerp = perlinLerp(bottomLeftCorner, bottomRightCorner, InterpolatedX);
+        float yLerp = perlinLerp(topLeftCorner, topRightCorner, InterpolatedX);
+
+        return perlinLerp(xLerp, yLerp, InterpolatedY);
     }
 }
