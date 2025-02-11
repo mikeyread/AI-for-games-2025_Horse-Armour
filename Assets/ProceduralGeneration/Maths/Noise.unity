@@ -548,3 +548,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   texture: {fileID: 0}
+  seed: 0
+  octaves: 8
+  frequency: 0.01
+  amplitude: 1
+  persistence: 0.5
+  lacurnity: 2
+  Reset: 0
+  powOn: 0
+  clampOn: 0
+  Power: 1

@@ -1,12 +1,8 @@
-using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 
 /// <summary>
-/// Handles all data required to generate and apply Perlin 2D noise.
+/// A class that contains multiple functions allowing generation of noise.
 /// </summary>
 public class PerlinNoise2D
 {
@@ -14,7 +10,7 @@ public class PerlinNoise2D
     const int noiseIterator = noiseQuality - 1;
 
     /// <summary>
-    /// A hash-table containing a large list of randomized floats that is initialized on creation of the Noise. It used for deterministic noise.
+    /// A hash-table containing a large list of randomized floats that is initialized on creation of the Noise. It allows noise to be deterministic on the selection of a seed.
     /// </summary>
     public static float[,] _Noise2D = new float[noiseQuality, noiseQuality];
 
@@ -33,12 +29,11 @@ public class PerlinNoise2D
 
 
     /// <summary>
-    /// Allows Interpolation between two points.
+    /// Performs Interpolation between two points using a percentage.
     /// </summary>
     /// <param name="left">The left side point to interpolate from.</param>
     /// <param name="right">The right side point to interpolate towards.</param>
-    /// <param name="percent">The degree of interpolation between the left and right.</param>
-
+    /// <param name="percent">The degree of interpolation between the left and right, zero to one.</param>
     public static float PerlinLerp(float left, float right, float percent)
     {
         return (1 - percent) * left + percent * right;
@@ -74,20 +69,21 @@ public class PerlinNoise2D
 
 
     /// <summary>
-    /// Outputs a float created via the combination of multiple Perlin layers.
+    /// Outputs a float created from the combination of multiple Perlin layers.
     /// </summary>
     /// <param name="octaves">The number of Perlin layers generated and combined together.</param>
+    /// <param name="offset">An offset applied to the coordinates.</param>
     /// <param name="frequency">The initial amount of detail the Noise will have.</param>
     /// <param name="amplitude">The initial strength of vertical offset applied by the Noise.</param>
     /// <param name="persistence">The multiplier of the amplitude per Octave layer.</param>
     /// <param name="lacurnity">The multiplier of the frequency per Octave layer.</param>
-    public static float FractalSum(float xPos, float yPos, int octaves, float frequency, float amplitude, float persistence, float lacurnity)
+    public static float PerlinNoise(float xPos, float yPos, float offset, int octaves, float frequency, float amplitude, float persistence, float lacurnity)
     {
         float sum = 0;
 
         for (int i = 0; i < octaves; i++)
         {
-            sum += amplitude * Noise2D(xPos * frequency, yPos * frequency);
+            sum += amplitude * Noise2D(Mathf.Abs(xPos + offset) * frequency, Mathf.Abs(yPos + offset) * frequency);
 
             amplitude *= persistence;
             frequency *= lacurnity;
@@ -96,18 +92,37 @@ public class PerlinNoise2D
         return sum;
     }
 
-    public static float FractalSum(float xPos, float yPos, int octaves, float frequency, float amplitude)
+    public static float PerlinNoise(float xPos, float yPos, int octaves, float frequency, float amplitude)
     {
-        return FractalSum(xPos, yPos, octaves, frequency, amplitude, 1, 1);
+        return PerlinNoise(xPos, yPos, 0, octaves, frequency, amplitude, 1, 1);
     }
 
-    public static float FractalSum(float xPos, float yPos, int octaves, float frequency)
+    public static float PerlinNoise(float xPos, float yPos, int octaves, float frequency)
     {
-        return FractalSum(xPos, yPos, octaves, frequency, 1, 1, 1);
+        return PerlinNoise(xPos, yPos, 0, octaves, frequency, 1, 1, 1);
+    }
+
+    /// <summary>
+    /// Outputs a normalised float created from the combination of multiple perlin layers
+    /// </summary>
+    public static float PerlinNoiseNormal(float xPos, float yPos, float offset, int octaves, float frequency, float amplitude, float persistence, float lacurnity)
+    {
+        float sum = 0;
+        float totalSum = 0;
+
+        for (int i = 0; i < octaves; i++)
+        {
+            totalSum += amplitude;
+            sum += amplitude * Noise2D(Mathf.Abs(xPos + offset) * frequency, Mathf.Abs(yPos + offset) * frequency);
+
+            amplitude *= persistence;
+            frequency *= lacurnity;
+        }
+
+        return sum / totalSum;
     }
 
 
-    // Calculates a 2D noise value using a specified x and y coordinate.
     public static float Noise2D(float xPos, float yPos)
     {
         int flooredX = (int)Mathf.Floor(xPos);
@@ -121,9 +136,9 @@ public class PerlinNoise2D
         float InterpolatedX = xPos - flooredX;
         float InterpolatedY = yPos - flooredY;
 
-
         float xLerp = PerlinCosineLerp(bottomLeftCorner, bottomRightCorner, InterpolatedX);
         float yLerp = PerlinCosineLerp(topLeftCorner, topRightCorner, InterpolatedX);
+
         return PerlinCosineLerp(xLerp, yLerp, InterpolatedY);
     }
 }

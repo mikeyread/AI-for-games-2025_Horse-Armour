@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEditor;
+using UnityEditor.VersionControl;
 using UnityEngine;
 
 using static WorldOptions;
@@ -8,12 +9,12 @@ using static WorldOptions;
 
 // Chunks are mesh and collision regions which form a unified terrain, including mesh generation and loading/unloading tasks.
 public class Chunk {
-
-    public GameObject chunk;
+    
+    public GameObject chunk { get; private set; }
     private Mesh terrain;
 
-    public bool generated = false;
 
+    public bool generated = false;
 
     public Chunk(Vector3 position)
     {
@@ -31,7 +32,7 @@ public class Chunk {
     }
 
     /// <summary>
-    ///  Generates the Mesh of the Chunk
+    ///  Generates the Geometry Mesh of the Chunk
     /// </summary>
     private void GenerateMesh()
     {
@@ -39,8 +40,12 @@ public class Chunk {
 
         List<Vector3> vertices = new List<Vector3>();
         List<Vector3> normals = new List<Vector3>();
-        List<Color> colors = new List<Color>();
         List<int> indices = new List<int>();
+
+        List<Vector2> uv = new List<Vector2>();
+        List<Color> colors = new List<Color>();
+
+
 
         float cornerX = chunk.transform.position.x - CHUNK_QUAD_AMOUNT / 2;
         float cornerZ = chunk.transform.position.z - CHUNK_QUAD_AMOUNT / 2;
@@ -52,15 +57,27 @@ public class Chunk {
                 float trueX = cornerX + (x * CHUNK_QUAD_SCALAR);
                 float trueZ = cornerZ + (z * CHUNK_QUAD_SCALAR);
 
-                float baseY = PerlinNoise2D.FractalSum(Mathf.Abs(trueX), Mathf.Abs(trueZ), 12, 0.33f, 1f, 0.5f, 2f);
-                float hilly = PerlinNoise2D.FractalSum(Mathf.Abs(trueX), Mathf.Abs(trueZ), 8, 0.033f, 32f, 0.5f, 2f) - 8f;
-                float mountainous = PerlinNoise2D.FractalSum(Mathf.Abs(trueX), Mathf.Abs(trueZ), 8, 0.0033f, 128f, 0.5f, 2f);
+                // Basic layered noise
+                float baseY         = PerlinNoise2D.PerlinNoise(trueX, trueZ, -7612, 12, 0.5f, 1f, 0.33f, 2f);
+                float hilly         = PerlinNoise2D.PerlinNoise(trueX, trueZ, 4541, 8, 0.033f, 24f, 0.33f, 2f) - 8f;
+                float mountainous   = PerlinNoise2D.PerlinNoise(trueX, trueZ, -16183, 6, 0.001f, 128f, 0.25f, 2f) - 32f;
 
-                float finalY = Mathf.Max(Mathf.Max(baseY, hilly),mountainous);
 
+                float normaliseY = (baseY + hilly + mountainous) / 157;
+                float finalY = Mathf.Pow(128, PerlinNoise2D.PerlinCosineLerp(0, 1, normaliseY)) - 8f;
+
+                float colorY = PerlinNoise2D.SmootherStep(normaliseY);
 
                 vertices.Add(new Vector3(x * CHUNK_QUAD_SCALAR, finalY, z * CHUNK_QUAD_SCALAR));
-                colors.Add(new Color(1, 0, 0));
+                colors.Add(new Color(colorY, colorY, colorY));
+                
+                if (x % 2 == 0)
+                {
+                    uv.Add(new Vector2(1, 1));
+                } else
+                {
+                    uv.Add(new Vector2(0, 0));
+                }
 
                 if (z < CHUNK_QUAD_AMOUNT && x < CHUNK_QUAD_AMOUNT)
                 {
@@ -119,13 +136,16 @@ public class Chunk {
         terrain.vertices = vertices.ToArray();
         terrain.triangles = indices.ToArray();
         terrain.normals = normals.ToArray();
+
         terrain.colors = colors.ToArray();
+        terrain.uv = uv.ToArray();
 
-        chunk.GetComponent<MeshFilter>().mesh = terrain;
-        chunk.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+
+        chunk.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Particles/Standard Unlit"));
         
-        //chunk.isStatic = true;
+        chunk.GetComponent<MeshFilter>().mesh = terrain;
 
+        chunk.isStatic = true;
         generated = true;
     }
 
