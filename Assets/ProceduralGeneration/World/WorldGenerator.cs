@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Mathematics;
-using UnityEditorInternal;
+
 using UnityEngine;
 
 using static WorldOptions;
@@ -60,15 +60,7 @@ public class WorldGenerator : MonoBehaviour
                 }
             }
         }
-
-        foreach (var chunk in chunkBuffer)
-        {
-            if (chunk.Value.generated) continue;
-
-            chunk.Value.GenerateMesh();
-        }
     }
-
 
     private void UnloadChunks(Vector2 position)
     {
@@ -96,7 +88,7 @@ public class WorldGenerator : MonoBehaviour
                     {
                         if (chunk.Key != posID) continue;
 
-                        if ((position - chunk.Key).magnitude < RENDER_DISTANCE + 0.5f) chunk.Value.Reload();
+                        if ((position - chunk.Key).magnitude < RENDER_DISTANCE + 0.33f) chunk.Value.Reload();
                     }
                 }
             }

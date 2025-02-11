@@ -20,7 +20,7 @@ public class ProceduralNoise : MonoBehaviour
     private const int noiseIterator = noiseQuality - 1;
 
     [SerializeField][Range(0.01f,2.5f)] float frequency = 1;
-    [SerializeField][Range(0.01f,2.5f)] float octaves = 4;
+    [SerializeField][Range(1,8)] int octaves = 4;
 
 
     private void Awake()
@@ -96,6 +96,11 @@ public class ProceduralNoise : MonoBehaviour
         return Mathf.Clamp(Mathf.Pow(value, 2) * 3 - Mathf.Pow(value, 3) * 2,0,1);
     }
 
+    static float SmootherStep(float value)
+    {
+        return Mathf.Clamp(Mathf.Pow(value, 5) * 6 - Mathf.Pow(value, 4) * 15 + Mathf.Pow(value, 3) * 10, 0, 1);
+    }
+
 
     // Calculates a 1D noise value using a specified x coordinate.
     private float Noise1D(float xPos)
@@ -149,8 +154,8 @@ public class ProceduralNoise : MonoBehaviour
         float InterpolatedY = yPos - flooredY;
 
         if (smoothStepEnabled) {
-            InterpolatedX = Smooth(xPos - flooredX);
-            InterpolatedY = Smooth(yPos - flooredY);
+            InterpolatedX = SmootherStep(xPos - flooredX);
+            InterpolatedY = SmootherStep(yPos - flooredY);
         }
 
         float xLerp = perlinLerp(bottomLeftCorner, bottomRightCorner, InterpolatedX);

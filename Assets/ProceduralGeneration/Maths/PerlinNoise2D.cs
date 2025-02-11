@@ -5,13 +5,17 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 
-// Basal level, allows infinite perlin grid generation taking in the X and Z coordinates on the grid as the offset.
+/// <summary>
+/// Handles all data required to generate and apply Perlin 2D noise.
+/// </summary>
 public class PerlinNoise2D
 {
     const int noiseQuality = 256;
     const int noiseIterator = noiseQuality - 1;
 
-    // Hash contains a randomly generated table of values.
+    /// <summary>
+    /// A hash-table containing a large list of randomized floats that is initialized on creation of the Noise. It used for deterministic noise.
+    /// </summary>
     public static float[,] _Noise2D = new float[noiseQuality, noiseQuality];
 
 
@@ -27,58 +31,99 @@ public class PerlinNoise2D
         }
     }
 
-    public static float perlinLerp(float x1, float x2, float i)
+
+    /// <summary>
+    /// Allows Interpolation between two points.
+    /// </summary>
+    /// <param name="left">The left side point to interpolate from.</param>
+    /// <param name="right">The right side point to interpolate towards.</param>
+    /// <param name="percent">The degree of interpolation between the left and right.</param>
+
+    public static float PerlinLerp(float left, float right, float percent)
     {
-        return (1 - i) * x1 + i * x2;
+        return (1 - percent) * left + percent * right;
     }
 
+    /// <summary>
+    /// Similar to PerlinLerp, except it uses cosine Interpolation for a smoother transition.
+    /// </summary>
+    /// <param name="left">The left side point to interpolate from.</param>
+    /// <param name="right">The right side point to interpolate towards.</param>
+    /// <param name="percent">The degree of interpolation between the left and right.</param>
+    public static float PerlinCosineLerp(float left, float right, float percent)
+    {
+        return ((Mathf.Cos(Mathf.PI * percent) + 1) / 2) * left + ((1 - Mathf.Cos(Mathf.PI * percent)) / 2 * right);
+    }
 
-    // Smooths any normalized value (0 to 1).
-    public static float Smooth(float value)
+    /// <summary>
+    /// Applies a Cubic Hermite Interpolation modifier with a clamp to smooth an inputted value.
+    /// </summary>
+    /// <param name="value">The value you want to smooth</param>
+    public static float SmoothStep(float value)
     {
         return Mathf.Clamp(Mathf.Pow(value, 2) * 3 - Mathf.Pow(value, 3) * 2, 0, 1);
     }
 
+    /// <summary>
+    /// Similar to Smoothstep, except the smoothing interpolation is stronger.
+    /// </summary>
+    public static float SmootherStep(float value)
+    {
+        return Mathf.Clamp(Mathf.Pow(value, 5) * 6 - Mathf.Pow(value, 4) * 15 + Mathf.Pow(value, 3) * 10, 0, 1);
+    }
 
-    // Iterates through multiple noise functions and tallies up the result, then normalises it by the theoretically highest value possible.
-    public static float FractalSum(float xPos, float yPos, int octaves, float frequency, float scale)
+
+    /// <summary>
+    /// Outputs a float created via the combination of multiple Perlin layers.
+    /// </summary>
+    /// <param name="octaves">The number of Perlin layers generated and combined together.</param>
+    /// <param name="frequency">The initial amount of detail the Noise will have.</param>
+    /// <param name="amplitude">The initial strength of vertical offset applied by the Noise.</param>
+    /// <param name="persistence">The multiplier of the amplitude per Octave layer.</param>
+    /// <param name="lacurnity">The multiplier of the frequency per Octave layer.</param>
+    public static float FractalSum(float xPos, float yPos, int octaves, float frequency, float amplitude, float persistence, float lacurnity)
     {
         float sum = 0;
-        float highestSum = 0;
 
         for (int i = 0; i < octaves; i++)
         {
-            sum += Noise2D(xPos * frequency, yPos * frequency) * scale;
+            sum += amplitude * Noise2D(xPos * frequency, yPos * frequency);
 
-            highestSum += scale;
-            frequency *= 2f;
-            scale /= 2f;
+            amplitude *= persistence;
+            frequency *= lacurnity;
         }
 
-        return sum / highestSum;
+        return sum;
+    }
+
+    public static float FractalSum(float xPos, float yPos, int octaves, float frequency, float amplitude)
+    {
+        return FractalSum(xPos, yPos, octaves, frequency, amplitude, 1, 1);
+    }
+
+    public static float FractalSum(float xPos, float yPos, int octaves, float frequency)
+    {
+        return FractalSum(xPos, yPos, octaves, frequency, 1, 1, 1);
     }
 
 
     // Calculates a 2D noise value using a specified x and y coordinate.
     public static float Noise2D(float xPos, float yPos)
     {
-        int flooredX = Mathf.Abs((int)Mathf.Floor(xPos));
-        int flooredY = Mathf.Abs((int)Mathf.Floor(yPos));
-
-        //Debug.Log(flooredX % noiseIterator);
-        //Debug.Log(flooredY % noiseIterator);
+        int flooredX = (int)Mathf.Floor(xPos);
+        int flooredY = (int)Mathf.Floor(yPos);
 
         float bottomLeftCorner  = _Noise2D[  flooredX % noiseIterator,         flooredY % noiseIterator];
         float bottomRightCorner = _Noise2D[ (flooredX + 1) % noiseIterator,    flooredY % noiseIterator];
         float topLeftCorner     = _Noise2D[  flooredX % noiseIterator,        (flooredY + 1) % noiseIterator];
         float topRightCorner    = _Noise2D[ (flooredX + 1) % noiseIterator,   (flooredY + 1) % noiseIterator];
 
-        float InterpolatedX = Smooth(xPos - flooredX);
-        float InterpolatedY = Smooth(yPos - flooredY);
+        float InterpolatedX = xPos - flooredX;
+        float InterpolatedY = yPos - flooredY;
 
-        float xLerp = perlinLerp(bottomLeftCorner, bottomRightCorner, InterpolatedX);
-        float yLerp = perlinLerp(topLeftCorner, topRightCorner, InterpolatedX);
 
-        return perlinLerp(xLerp, yLerp, InterpolatedY);
+        float xLerp = PerlinCosineLerp(bottomLeftCorner, bottomRightCorner, InterpolatedX);
+        float yLerp = PerlinCosineLerp(topLeftCorner, topRightCorner, InterpolatedX);
+        return PerlinCosineLerp(xLerp, yLerp, InterpolatedY);
     }
 }

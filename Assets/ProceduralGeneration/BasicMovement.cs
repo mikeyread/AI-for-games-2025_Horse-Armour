@@ -62,21 +62,6 @@ public class BasicMovement : MonoBehaviour
             velocity += new Vector3(0, -moveSpeed, 0) * Time.deltaTime;
         }
 
-        if (Input.mouseScrollDelta.y > 0)
-        {
-            moveSpeed *= 1.05f * Time.deltaTime;
-        }
-        else if (Input.mouseScrollDelta.y < 0)
-        {
-            moveSpeed *= 0.95f;
-            if (moveSpeed < 0.000001f)
-            {
-                moveSpeed = 0.000002f;
-            }
-        }
-
-        velocity.Scale(new Vector3(0.99f, 0.99f, 0.99f));
-
-        this.transform.position +=  velocity * Time.deltaTime;
+        this.transform.position += velocity * Time.deltaTime;
     }
 }
