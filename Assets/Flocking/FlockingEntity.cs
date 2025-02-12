@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
+using Unity.VisualScripting.Antlr3.Runtime.Tree;
 using UnityEngine;
 //using System;       //Used for array functions like .Clear
 
@@ -15,6 +17,15 @@ public class FlockingEntity : MonoBehaviour
     public FlockingManager manager;
     //Radius in which the members can see eachother
     private float DetectionRadius = 20;
+
+    //ID
+    public int ID;
+
+    private Vector3 finalVec; 
+
+
+    
+
 
     //hm
     private Vector3 direction = Vector3.zero;
@@ -83,6 +94,9 @@ public class FlockingEntity : MonoBehaviour
         //Resetting Variables
         positionAverage = Vector3.zero;
         amountNearby = 0;
+        finalVec = Vector3.zero;
+
+
 
 
         foreach(var entity in manager.flock)
@@ -96,24 +110,36 @@ public class FlockingEntity : MonoBehaviour
                 //nearbyMembersColour[amountNearby] = entity.ownColour;
 
 
-                //For some reason the members seem to gravitate (not with gravity) heading downwards?
+                //For some reason the members seem to gravitate towards (0,0,0)?
                 if (distBetween >= DetectionRadius - 15)
                 {
-                    positionAverage += entity.transform.position;
+                    //positionAverage += entity.transform.position;
                 }
                 else
                 {
                     //Seperation
-                    positionAverage -= entity.transform.position;  
+                    //positionAverage -= entity.transform.position;  
                 }
 
 
 
                 //Setting colour to show it is following another entity
-                ren.material.color = Color.red;
+                //ren.material.color = Color.red;
 
                 
                 amountNearby++;
+
+                //Alignment isn't given it's full name because it looks nicer staggered here, fight me.
+                Vector3 align = ComputeAlignment(entity, amountNearby);
+                Vector3 cohesion = ComputeCohesion(entity, amountNearby);
+                Vector3 seperation = computeSeperation(entity, amountNearby);
+
+                finalVec = align + cohesion + seperation;
+
+                finalVec.Normalize();
+
+                rBody.AddForce(finalVec);
+
                 //Debug.Log("Distance to other: " + Vector3.Distance(entity.transform.position, transform.position));
             }
 
@@ -126,13 +152,87 @@ public class FlockingEntity : MonoBehaviour
             positionAverage = positionAverage / amountNearby;
             Vector3 unitVecTowardsCentre = (1 / (positionAverage - transform.position).magnitude * (positionAverage - transform.position));
 
+            if (positionAverage == new Vector3(0,0,0))
+            {
+                Debug.Log("ID: " + ID + "Velocity: " + unitVecTowardsCentre);
+                ren.material.color = Color.yellow;
+            }
 
 
-            rBody.MoveRotation(Quaternion.LookRotation(unitVecTowardsCentre, Vector3.up));
-            rBody.AddForce(unitVecTowardsCentre);
+            //rBody.MoveRotation(Quaternion.LookRotation(unitVecTowardsCentre, Vector3.up));
+            //rBody.AddForce(unitVecTowardsCentre);
         }
-        Debug.Log(positionAverage);
 
 
     }
+
+
+
+    Vector3 ComputeAlignment(FlockingEntity flockMember, int amountNear)
+    {
+        Vector3 alignment = Vector3.zero;
+
+        if (amountNear == 0)
+        {
+            return Vector3.zero;
+        }
+
+        alignment.x += flockMember.rBody.velocity.x;
+        alignment.y += flockMember.rBody.velocity.y;
+        alignment.z += flockMember.rBody.velocity.z;
+
+        alignment.x /= amountNear;
+        alignment.y /= amountNear;
+        alignment.z /= amountNear;
+
+        alignment.Normalize();
+
+        return alignment;
+    }
+
+
+
+    Vector3 ComputeCohesion(FlockingEntity flockMember, int amountNear)
+    {
+        Vector3 cohesion = Vector3.zero;
+
+
+        cohesion.x += flockMember.transform.position.x;
+        cohesion.y += flockMember.transform.position.y;
+        cohesion.z += flockMember.transform.position.z;
+
+        cohesion.x /= amountNear;
+        cohesion.y /= amountNear;
+        cohesion.z /= amountNear;
+
+        cohesion = new Vector3(cohesion.x - transform.position.x, cohesion.y - transform.position.y, cohesion.z - transform.position.z);
+        cohesion.Normalize();
+
+        return cohesion;
+    }
+
+    Vector3 computeSeperation(FlockingEntity flockMember, int amountNear)
+    {
+        Vector3 seperation = Vector3.zero;
+
+        seperation.x += transform.position.x - flockMember.transform.position.x;
+        seperation.y += transform.position.y - flockMember.transform.position.y;
+        seperation.z += transform.position.z - flockMember.transform.position.z;
+
+
+        seperation.x *= -1;
+        seperation.y *= -1;
+        seperation.z *= -1;
+
+
+
+        return seperation;
+    }
+
+
+
+
 }
+
+
+

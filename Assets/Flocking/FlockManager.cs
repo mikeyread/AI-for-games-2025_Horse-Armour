@@ -11,7 +11,7 @@ public class FlockingManager : MonoBehaviour
     public FlockingEntity flockMember;
 
     //The radius at which flocking entities can detect eachother
-    public float detectionRadius;
+    //public float detectionRadius;
 
     //Value of average position of all flock members
     protected Vector3 averagePosition = Vector3.zero;
@@ -24,6 +24,7 @@ public class FlockingManager : MonoBehaviour
         for (int i = 0; i < flock.Length; i++)
         {
             flock[i]=((FlockingEntity)Instantiate(flockMember, transform.position + (new Vector3(Random.value, Random.value, Random.value))*50, transform.rotation));
+            flock[i].ID = i;
             flock[i].manager = this;
         }
     }
