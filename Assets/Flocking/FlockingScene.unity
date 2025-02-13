@@ -161,6 +161,31 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   flockMember: {fileID: 1589791857}
 --- !u!65 &63232186
 BoxCollider:
@@ -681,7 +706,7 @@ PrefabInstance:
     - target: {fileID: 6067564354525641018, guid: a8efaa83e026ffd4586b528910c1a530,
         type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6067564354525641018, guid: a8efaa83e026ffd4586b528910c1a530,
         type: 3}
@@ -701,7 +726,12 @@ PrefabInstance:
     - target: {fileID: 6067564354525641018, guid: a8efaa83e026ffd4586b528910c1a530,
         type: 3}
       propertyPath: m_ExcludeLayers.m_Bits
-      value: 0
+      value: 16
+      objectReference: {fileID: 0}
+    - target: {fileID: 6593833404070822947, guid: a8efaa83e026ffd4586b528910c1a530,
+        type: 3}
+      propertyPath: m_Constraints
+      value: 112
       objectReference: {fileID: 0}
     - target: {fileID: 8142248133844200579, guid: a8efaa83e026ffd4586b528910c1a530,
         type: 3}
