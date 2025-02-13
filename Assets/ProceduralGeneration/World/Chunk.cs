@@ -140,12 +140,11 @@ public class Chunk {
         terrain.colors = colors.ToArray();
         terrain.uv = uv.ToArray();
 
-
         chunk.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Particles/Standard Unlit"));
         
         chunk.GetComponent<MeshFilter>().mesh = terrain;
+        //chunk.GetComponent<MeshFilter>().mesh.Optimize();
 
-        chunk.isStatic = true;
         generated = true;
     }
 

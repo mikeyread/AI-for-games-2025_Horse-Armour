@@ -38,8 +38,6 @@ public class WorldGenerator : MonoBehaviour
 
         GenerateChunks(flooredPos);
         UnloadChunks(flooredPos);
-
-        lastPosition = flooredPos;
     }
 
 

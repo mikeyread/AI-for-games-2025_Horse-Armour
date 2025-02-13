@@ -6,7 +6,7 @@ using UnityEngine;
 /// </summary>
 public class PerlinNoise2D
 {
-    const int noiseQuality = 256;
+    public const int noiseQuality = 256;
     const int noiseIterator = noiseQuality - 1;
 
     /// <summary>

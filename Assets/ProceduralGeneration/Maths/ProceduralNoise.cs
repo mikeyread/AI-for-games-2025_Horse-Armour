@@ -14,11 +14,19 @@ public class ProceduralNoise : MonoBehaviour
 
     [SerializeField] int seed;
 
+    [SerializeField] bool Reset = false;
     [SerializeField][Range(1,8)] int octaves = 8;
     [SerializeField][Range(0.01f, 2.5f)] float frequency = 0.033f;
     [SerializeField][Range(0.01f, 2.5f)] float amplitude = 1f;
     [SerializeField][Range(0.01f, 2.5f)] float persistence = 0.5f;
     [SerializeField][Range(0.01f, 2.5f)] float lacurnity = 2f;
+
+    [SerializeField] bool powOn = false;
+    [SerializeField] bool clampOn = false;
+    [SerializeField][Min(0.01f)] float Power = 1f;
+
+    private float settingCheck;
+    private float settingSum;
 
     private void Awake()
     {
@@ -28,10 +36,10 @@ public class ProceduralNoise : MonoBehaviour
         QuadRenderer.material.mainTexture = GenerateTexture();
     }
 
-    [SerializeField] bool Reset = false;
-    void Update()
+
+    void FixedUpdate()
     {
-        QuadRenderer.material.mainTexture = GenerateTexture();
+        settingCheck = settingSum;
 
         if (Reset)
         {
@@ -43,11 +51,14 @@ public class ProceduralNoise : MonoBehaviour
 
             Reset = false;
         }
+
+        settingSum = octaves + frequency + amplitude + persistence + lacurnity;
+
+        if (settingCheck == settingSum) return;
+
+        QuadRenderer.material.mainTexture = GenerateTexture();
     }
 
-    [SerializeField] bool powOn = false;
-    [SerializeField] bool clampOn = false;
-    [SerializeField][Min(0.01f)] float Power = 1f;
     private Texture2D GenerateTexture()
     {
         texture = new Texture2D(TextureScale, TextureScale);
