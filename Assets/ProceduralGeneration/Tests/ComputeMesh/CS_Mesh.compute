@@ -1,0 +1,28 @@
+#pragma kernel ComputeBasicMesh
+
+
+RWStructuredBuffer<float3> vertices;
+RWStructuredBuffer<int> indices;
+
+float3 globalPosition;
+int meshSize;
+float quadScale;
+
+
+[numthreads(8, 8, 1)]
+void ComputeBasicMesh(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= meshSize)
+    {
+        return;
+    }
+    
+    int triStart = id.x * 3;
+    vertices[triStart] = float3(id.x, 0, id.y);
+    vertices[triStart + 1] = float3(id.x, 0, id.y);
+    vertices[triStart + 2] = float3(id.x, 0, id.y);
+    
+    indices[triStart] = triStart;
+    indices[triStart + 1] = triStart + 1;
+    indices[triStart + 2] = triStart + 2;
+}

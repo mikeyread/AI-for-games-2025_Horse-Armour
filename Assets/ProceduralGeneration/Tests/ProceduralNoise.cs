@@ -20,13 +20,15 @@ public class ProceduralNoise : MonoBehaviour
     [SerializeField][Range(0.01f, 2.5f)] float amplitude = 1f;
     [SerializeField][Range(0.01f, 2.5f)] float persistence = 0.5f;
     [SerializeField][Range(0.01f, 2.5f)] float lacurnity = 2f;
-
-    [SerializeField] bool powOn = false;
-    [SerializeField] bool clampOn = false;
-    [SerializeField][Min(0.01f)] float Power = 1f;
+    [SerializeField] bool turbulent = false;
+    [SerializeField] bool normalized = false;
 
     private float settingCheck;
     private float settingSum;
+
+    private bool turblentCheck;
+    private bool normalizedCheck;
+
 
     private void Awake()
     {
@@ -39,8 +41,6 @@ public class ProceduralNoise : MonoBehaviour
 
     void FixedUpdate()
     {
-        settingCheck = settingSum;
-
         if (Reset)
         {
             octaves = 8;
@@ -49,12 +49,21 @@ public class ProceduralNoise : MonoBehaviour
             persistence = 0.5f;
             lacurnity = 2f;
 
+            turbulent = false;
+            normalized = false;
+
             Reset = false;
         }
 
         settingSum = octaves + frequency + amplitude + persistence + lacurnity;
 
-        if (settingCheck == settingSum) return;
+        if (settingCheck == settingSum && turblentCheck == turbulent && normalizedCheck == normalized) return;
+        else {
+            settingCheck = settingSum;
+            turblentCheck = turbulent;
+            normalizedCheck = normalized;
+        }
+
 
         QuadRenderer.material.mainTexture = GenerateTexture();
     }
@@ -67,22 +76,7 @@ public class ProceduralNoise : MonoBehaviour
         {
             for (int y = 0; y < TextureScale; y++)
             {
-                float fractal;
-
-                if (powOn)
-                {
-                    fractal = Mathf.Pow(PerlinNoise2D.PerlinNoiseNormal(x, y, 0, octaves, frequency, amplitude, persistence, lacurnity), Power);
-                }
-                else
-                {
-                    fractal = PerlinNoise2D.PerlinNoiseNormal(x, y, 0, octaves, frequency, amplitude, persistence, lacurnity);
-                }
-
-                if (clampOn)
-                {
-                    fractal = PerlinNoise2D.PerlinCosineLerp(0, 1, fractal);
-                }
-
+                float fractal = NoiseExperimentation(x, y);
 
                 texture.SetPixel(x, y, new Color(fractal, fractal, fractal));
             }
@@ -92,5 +86,12 @@ public class ProceduralNoise : MonoBehaviour
         texture.Apply();
 
         return texture;
+    }
+
+    public float NoiseExperimentation(float x, float y)
+    {
+        float cloudy = PerlinNoise2D.PerlinNoise(x, y, -2183, 8, 0.1f, 1f, 0.5f, 2f, false, true);
+
+        return PerlinNoise2D.SmootherStep(Mathf.Pow(2, cloudy) - 1);
     }
 }

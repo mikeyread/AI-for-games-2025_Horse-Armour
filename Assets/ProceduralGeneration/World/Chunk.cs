@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Unity.Mathematics;
+using Unity.VisualScripting.Antlr3.Runtime.Tree;
 using UnityEditor;
-using UnityEditor.VersionControl;
 using UnityEngine;
 
 using static WorldOptions;
@@ -58,18 +58,11 @@ public class Chunk {
                 float trueZ = cornerZ + (z * CHUNK_QUAD_SCALAR);
 
                 // Basic layered noise
-                float baseY         = PerlinNoise2D.PerlinNoise(trueX, trueZ, -7612, 12, 0.5f, 1f, 0.33f, 2f);
-                float hilly         = PerlinNoise2D.PerlinNoise(trueX, trueZ, 4541, 8, 0.033f, 24f, 0.33f, 2f) - 8f;
-                float mountainous   = PerlinNoise2D.PerlinNoise(trueX, trueZ, -16183, 6, 0.001f, 128f, 0.25f, 2f) - 32f;
+                float y = ChunkNoise(trueX, trueZ);
+                vertices.Add(new Vector3(x * CHUNK_QUAD_SCALAR, y, z * CHUNK_QUAD_SCALAR));
 
-
-                float normaliseY = (baseY + hilly + mountainous) / 157;
-                float finalY = Mathf.Pow(128, PerlinNoise2D.PerlinCosineLerp(0, 1, normaliseY)) - 8f;
-
-                float colorY = PerlinNoise2D.SmootherStep(normaliseY);
-
-                vertices.Add(new Vector3(x * CHUNK_QUAD_SCALAR, finalY, z * CHUNK_QUAD_SCALAR));
-                colors.Add(new Color(colorY, colorY, colorY));
+                y = y / 200;
+                colors.Add(new Color(y, y, y));
                 
                 if (x % 2 == 0)
                 {
@@ -143,9 +136,21 @@ public class Chunk {
         chunk.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Particles/Standard Unlit"));
         
         chunk.GetComponent<MeshFilter>().mesh = terrain;
-        //chunk.GetComponent<MeshFilter>().mesh.Optimize();
+        chunk.GetComponent<MeshFilter>().mesh.Optimize();
 
         generated = true;
+    }
+
+
+    public float ChunkNoise(float x, float y)
+    {
+        float roads = PerlinNoise2D.PerlinNoise(x, y, -3974, 8, 0.1f, 12f, 0.5f, 2f, true, true);
+        float valleys = PerlinNoise2D.PerlinNoise(x, y, 1272, 8, 0.01f, 12f, 0.5f, 2f, true, false);
+        float variation = PerlinNoise2D.PerlinNoise(x, y, -7612, 12, 0.15f, 3f, 0.5f, 2f, false, false);
+        float mountainous = PerlinNoise2D.PerlinNoise(x, y, -16183, 8, 0.002f, 128f, 0.5f, 2f) - 64f;
+
+
+        return (mountainous - valleys) + (variation * roads);
     }
 
 

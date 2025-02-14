@@ -35,7 +35,6 @@ public class computerShaderTester : MonoBehaviour
         _ComputeShader.SetBuffer(0, "hash", hashBuffer);
         _ComputeShader.Dispatch(0, _Texture.width, _Texture.height, 1);
 
-
         // Assign the compute result to the material.
         if (GetComponent<MeshRenderer>().material == null)
         {
@@ -44,5 +43,7 @@ public class computerShaderTester : MonoBehaviour
 
         _Texture.filterMode = FilterMode.Point;
         GetComponent<MeshRenderer>().sharedMaterial.mainTexture = _Texture;
+
+        hashBuffer.Dispose();
     }
 }

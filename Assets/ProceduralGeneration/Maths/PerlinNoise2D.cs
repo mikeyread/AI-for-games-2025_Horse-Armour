@@ -77,50 +77,41 @@ public class PerlinNoise2D
     /// <param name="amplitude">The initial strength of vertical offset applied by the Noise.</param>
     /// <param name="persistence">The multiplier of the amplitude per Octave layer.</param>
     /// <param name="lacurnity">The multiplier of the frequency per Octave layer.</param>
-    public static float PerlinNoise(float xPos, float yPos, float offset, int octaves, float frequency, float amplitude, float persistence, float lacurnity)
-    {
-        float sum = 0;
-
-        for (int i = 0; i < octaves; i++)
-        {
-            sum += amplitude * Noise2D(Mathf.Abs(xPos + offset) * frequency, Mathf.Abs(yPos + offset) * frequency);
-
-            amplitude *= persistence;
-            frequency *= lacurnity;
-        }
-
-        return sum;
-    }
-
-    public static float PerlinNoise(float xPos, float yPos, int octaves, float frequency, float amplitude)
-    {
-        return PerlinNoise(xPos, yPos, 0, octaves, frequency, amplitude, 1, 1);
-    }
-
-    public static float PerlinNoise(float xPos, float yPos, int octaves, float frequency)
-    {
-        return PerlinNoise(xPos, yPos, 0, octaves, frequency, 1, 1, 1);
-    }
-
-    /// <summary>
-    /// Outputs a normalised float created from the combination of multiple perlin layers
-    /// </summary>
-    public static float PerlinNoiseNormal(float xPos, float yPos, float offset, int octaves, float frequency, float amplitude, float persistence, float lacurnity)
+    /// <param name="turbulent">Determines if the noise is turbulent.</param>
+    public static float PerlinNoise(float xPos, float yPos, float offset, int octaves, float frequency, float amplitude, float persistence, float lacurnity, bool turbulent, bool normalized)
     {
         float sum = 0;
         float totalSum = 0;
 
         for (int i = 0; i < octaves; i++)
         {
-            totalSum += amplitude;
             sum += amplitude * Noise2D(Mathf.Abs(xPos + offset) * frequency, Mathf.Abs(yPos + offset) * frequency);
+            totalSum += amplitude;
 
             amplitude *= persistence;
             frequency *= lacurnity;
         }
 
-        return sum / totalSum;
+        if (turbulent) {
+            sum = Mathf.Abs((sum - totalSum / 2) * 2);
+        }
+
+        if (normalized) {
+            return sum / totalSum;
+        }
+        else
+        {
+            return sum;
+        }
     }
+
+    public static float PerlinNoise(float xPos, float yPos, float offset, int octaves, float frequency, float amplitude, float persistence, float lacurnity, bool Turbulent) { return PerlinNoise(xPos, yPos, offset, octaves, frequency, amplitude, persistence, lacurnity, Turbulent, false); }
+    public static float PerlinNoise(float xPos, float yPos, float offset, int octaves, float frequency, float amplitude, float persistence, float lacurnity) { return PerlinNoise(xPos, yPos, offset, octaves, frequency, amplitude, persistence, lacurnity, false); }
+    public static float PerlinNoise(float xPos, float yPos, float offset, int octaves, float frequency, float amplitude, float persistence) { return PerlinNoise(xPos, yPos, offset, octaves, frequency, amplitude, persistence, 1); }
+    public static float PerlinNoise(float xPos, float yPos, float offset, int octaves, float frequency, float amplitude) {return PerlinNoise(xPos, yPos, offset, octaves, frequency, amplitude, 1); }
+    public static float PerlinNoise(float xPos, float yPos, float offset, int octaves, float frequency) { return PerlinNoise(xPos, yPos, offset, octaves, frequency, 1); }
+    public static float PerlinNoise(float xPos, float yPos, float offset, int octaves) { return PerlinNoise(xPos, yPos, offset, octaves, 1); }
+    public static float PerlinNoise(float xPos, float yPos, float offset) { return PerlinNoise(xPos, yPos, offset, 1); }
 
 
     public static float Noise2D(float xPos, float yPos)
