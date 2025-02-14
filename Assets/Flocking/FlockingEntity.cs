@@ -92,9 +92,10 @@ public class FlockingEntity : MonoBehaviour
 
 
         ren.material.color = Color.blue;
-
-        velocity = new Vector3(Random.value * 1, Random.value * 1, Random.value * 1);
-        rBody.AddForce(velocity);
+        //Could add scale serialized float to test
+        //velocity = new Vector3(Random.value * 1, Random.value * 1, Random.value * 1);
+        rBody.AddForce(velocity, ForceMode.VelocityChange);
+        
     }
 
     // Update is called once per frame
@@ -117,7 +118,7 @@ public class FlockingEntity : MonoBehaviour
             if ((entity != this) && (distBetween < DetectionRadius))
                 {
 
-    
+
 
 
                 //nearbyMembersColour[amountNearby] = entity.ownColour;
@@ -126,12 +127,12 @@ public class FlockingEntity : MonoBehaviour
                 //For some reason the members seem to gravitate towards (0,0,0)?
                 //if (distBetween >= DetectionRadius - 15)
                 //{
-                //    //positionAverage += entity.transform.position;
+                //    positionAverage += entity.transform.position;
                 //}
                 //else
                 //{
                 //    //Seperation
-                //    //positionAverage -= entity.transform.position;  
+                //    positionAverage -= entity.transform.position;  
                 //}
 
 
@@ -139,7 +140,7 @@ public class FlockingEntity : MonoBehaviour
                 //Setting colour to show it is following another entity
                 //ren.material.color = Color.red;
 
-                
+
                 amountNearby++;
 
                 //Alignment isn't given it's full name because it looks nicer staggered here, fight me.
@@ -153,11 +154,13 @@ public class FlockingEntity : MonoBehaviour
 
                 finalVec.Normalize();
 
-                velocity += finalVec * speed;
 
-                //rBody.AddForce(velocity);
 
-                transform.position += velocity;
+                //velocity += finalVec * Time.deltaTime * speed;
+
+                rBody.AddForce(finalVec);
+
+                //transform.position += velocity;
 
                 rBody.MoveRotation(Quaternion.LookRotation(velocity, Vector3.up));
 
@@ -167,13 +170,13 @@ public class FlockingEntity : MonoBehaviour
 
         }
 
-        //Finding average position of all members nearby
+        ////Finding average position of all members nearby
         //if (amountNearby != 0)
         //{
         //    positionAverage = positionAverage / amountNearby;
         //    Vector3 unitVecTowardsCentre = (1 / (positionAverage - transform.position).magnitude * (positionAverage - transform.position));
 
-        //    if (positionAverage == new Vector3(0,0,0))
+        //    if (positionAverage == new Vector3(0, 0, 0))
         //    {
         //        Debug.Log("ID: " + ID + "Velocity: " + unitVecTowardsCentre);
         //        ren.material.color = Color.yellow;
@@ -210,7 +213,7 @@ public class FlockingEntity : MonoBehaviour
 
         alignment.Normalize();
 
-        return alignment;
+        return alignment * Time.deltaTime;
     }
 
 
@@ -237,7 +240,7 @@ public class FlockingEntity : MonoBehaviour
 
         cohesion.Normalize();
 
-        return cohesion;
+        return cohesion * Time.deltaTime;
     }
 
     Vector3 computeSeperation(FlockingEntity flockMember, int amountNear)
@@ -256,7 +259,7 @@ public class FlockingEntity : MonoBehaviour
 
 
 
-        return seperation;
+        return seperation * Time.deltaTime;
     }
 
 
