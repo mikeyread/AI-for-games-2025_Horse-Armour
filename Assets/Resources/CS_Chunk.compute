@@ -75,10 +75,18 @@ void ComputeBasicMesh(uint3 id : SV_DispatchThreadID)
     
     uint vertexIndex = id.x + (id.y * meshSize);
     
-    float noiseOffset = FractalSum(abs(id.xy + globalPosition.xz + globalOffset.xy), frequency, amplitude);
+    float cornerX = globalPosition.x - (meshSize / 2);
+    float cornerY = globalPosition.z - (meshSize / 2);
+    
+    float trueX = cornerX + id.x + 1;
+    float trueY = cornerY + id.y + 1;
+    float2 truePos = float2(trueX, trueY) * quadScale;
+    
+    // Noise Application
+    float noiseOffset = FractalSum(abs(truePos), frequency, amplitude);
     
     
-    vertices[vertexIndex] = float3(id.x, noiseOffset, id.y);
+    vertices[vertexIndex] = float3(truePos.x, noiseOffset, truePos.y);
     
     if (id.x < meshSize - 1 && id.y < meshSize - 1)
     {

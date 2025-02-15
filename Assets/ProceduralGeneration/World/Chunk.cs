@@ -46,7 +46,6 @@ public class Chunk {
         List<Color> colors = new List<Color>();
 
 
-
         float cornerX = chunk.transform.position.x - CHUNK_QUAD_AMOUNT / 2;
         float cornerZ = chunk.transform.position.z - CHUNK_QUAD_AMOUNT / 2;
 

@@ -133,3 +133,7 @@ public class PerlinNoise2D
         return PerlinCosineLerp(xLerp, yLerp, InterpolatedY);
     }
 }
+
+
+// TODO:
+// Noise begins showing artefacts after five or so Kilometers, switch to using doubles.

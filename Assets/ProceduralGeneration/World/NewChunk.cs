@@ -1,56 +1,92 @@
+using System.Collections;
+using System.Collections.Generic;
+using Unity.Properties;
 using Unity.VisualScripting;
 using UnityEngine;
 
-
-public class ComputeShaderMesh : MonoBehaviour
-{
+public class NewChunk {
+    private GameObject chunk;
     private Mesh grid;
 
     public ComputeShader _ComputeShader;
+
     public ComputeBuffer b_Vertices;
     public ComputeBuffer b_Indices;
     public ComputeBuffer b_HashTable;
 
     //private int c_MeshDetail = WorldOptions.CHUNK_QUAD_AMOUNT;
     //private float c_MeshScale = WorldOptions.CHUNK_QUAD_SCALAR;
-    [Header("Mesh Options")]
-    [SerializeField][Range(16,256)] int c_MeshQuantity;
-    [SerializeField][Range(0.1f, 25f)] float c_MeshScale;
+    private int c_MeshQuantity = WorldOptions.CHUNK_QUAD_AMOUNT;
+    private float c_MeshScale = WorldOptions.CHUNK_QUAD_SCALAR;
     private int m_IndexLimit;
 
     // Noise settings
-    [Header("Perlin Noise Options")]
-    [SerializeField] Vector2 c_GlobalOffset;
-    [SerializeField][Range(1, 16)] int c_Octaves = 2;
-    [SerializeField][Min(0.0033f)] float c_Frequency = 0.33f;
-    [SerializeField][Min(0.05f)] float c_Amplitude = 1;
-    [SerializeField][Range(0.25f, 2.5f)] float c_Persistence = 0.5f;
-    [SerializeField][Range(1f, 2.5f)] float c_Lacurnity = 2f;
+    private Vector2 c_GlobalOffset;
+    private int c_Octaves = 8;
+    private float c_Frequency = 0.0075f;
+    private float c_Amplitude = 64;
+    private float c_Persistence = 0.5f;
+    private float c_Lacurnity = 2f;
 
     private Vector4 c_GlobalPosition;
     private Vector3[] Vertices;
     private int[] Indices;
 
+    public NewChunk(Vector2 position) {
+        b_HashTable?.Dispose();
+        b_Vertices?.Dispose();
+        b_Indices?.Dispose();
 
-    private void Awake()
-    {
-        Initialize();
+        m_IndexLimit = c_MeshQuantity * c_MeshQuantity;
+
+        if (chunk == null)
+        {
+            chunk = new GameObject();
+        }
+
+        if (grid == null)
+        {
+            grid = new Mesh();
+        }
+
+        if (_ComputeShader == null)
+        {
+            _ComputeShader = Object.Instantiate(Resources.Load<ComputeShader>("CS_Chunk"));
+        }
+
+        if (Vertices == null || Vertices.Length != m_IndexLimit)
+        {
+            Vertices = new Vector3[m_IndexLimit];
+        }
+
+        if (Indices == null || Indices.Length != m_IndexLimit)
+        {
+            Indices = new int[m_IndexLimit * 6];
+        }
+
+        if (chunk.GetComponent<MeshFilter>() == null)
+        {
+            chunk.AddComponent<MeshFilter>();
+        }
+
+        if (chunk.GetComponent<MeshRenderer>() == null)
+        {
+            chunk.AddComponent<MeshRenderer>();
+        }
+
+        c_GlobalPosition = new Vector3(position.x * c_MeshScale * c_MeshQuantity, 0, position.y * c_MeshScale * c_MeshQuantity);
+        chunk.transform.position = c_GlobalPosition;
+
         GenerateMesh();
     }
 
-    private void FixedUpdate()
-    {
-        Refresh();
-        GenerateMesh();
-    }
 
-    // Generates Mesh by pushing any initial parameters into a Compute Shader for processing.
     void GenerateMesh()
     {
         b_Vertices = new ComputeBuffer(m_IndexLimit, sizeof(float) * 3);
         b_Indices = new ComputeBuffer(m_IndexLimit, sizeof(int) * 6);
 
-        // Hash Table
+        // Inserts the Perlin Hash Table
         b_HashTable = new ComputeBuffer(PerlinNoise2D.noiseQuality * PerlinNoise2D.noiseQuality, sizeof(float));
         b_HashTable.SetData(PerlinNoise2D._Noise2D);
         _ComputeShader.SetBuffer(0, "hash", b_HashTable);
@@ -85,55 +121,12 @@ public class ComputeShaderMesh : MonoBehaviour
         grid.vertices = Vertices;
         grid.triangles = Indices;
 
-        GetComponent<MeshFilter>().mesh = grid;
+        chunk.GetComponent<MeshFilter>().mesh = grid;
     }
 
-    // Initializes all vital data once.
-    private void Initialize()
+    public void Unload()
     {
-        // Prevents leaks (hopefully).
-        b_HashTable?.Dispose();
-        b_Vertices?.Dispose();
-        b_Indices?.Dispose();
-
-
-        if (grid == null)
-        {
-            grid = new Mesh();
-        }
-
-        if (GetComponent<MeshFilter>() == null)
-        {
-            this.AddComponent<MeshFilter>();
-        }
-
-        if (GetComponent<MeshRenderer>() == null)
-        {
-            this.AddComponent<MeshRenderer>();
-        }
-
-        Refresh();
-    }
-
-    // Refreshes
-    private void Refresh()
-    {
-        c_GlobalPosition = transform.position;
-        m_IndexLimit = c_MeshQuantity * c_MeshQuantity;
-
-        if (Vertices == null || Vertices.Length != m_IndexLimit)
-        {
-            Vertices = new Vector3[m_IndexLimit];
-        }
-
-        if (Indices == null || Indices.Length != m_IndexLimit)
-        {
-            Indices = new int[m_IndexLimit * 6];
-        }
+        //chunk.Destroy(grid);
+        GameObject.Destroy(chunk);
     }
 }
-
-// Compute Shaders have two inputs - constants and buffers, only buffers can be retrieved back.
-// Buffers need a correspondant array to write to in the script file.
-// You must retrieve the buffer data after dispatching.
-// Kernel Index represents a seperate function/method for execution within the Compute Shader file.

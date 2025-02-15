@@ -425,6 +425,11 @@ MonoBehaviour:
   _ComputeShader: {fileID: 7200000, guid: 66a085aad2a32a74fabf9e3dc7eaafc4, type: 3}
   c_MeshQuantity: 128
   c_MeshScale: 0.5
+  c_Octaves: 2
+  c_Frequency: 0.502
+  c_Amplitude: 1.09
+  c_Persistence: 0.48
+  c_Lacurnity: 2.0005121
 --- !u!1 &1669577222
 GameObject:
   m_ObjectHideFlags: 0
