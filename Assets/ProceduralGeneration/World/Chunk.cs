@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class Chunk {
 
-    private GameObject o_Chunk;
+    public GameObject o_Chunk;
     private Mesh m_Grid;
 
     public ComputeShader _ComputeShader;
@@ -124,8 +124,21 @@ public class Chunk {
 
         o_Chunk.GetComponent<MeshFilter>().mesh = m_Grid;
 
-        // TODO: Manual Normal generation, using  recalculation does not account for chunk borders properly.
+        // TODO: Manual Normal generation, using recalculation does not account for chunk borders properly.
         o_Chunk.GetComponent<MeshFilter>().mesh.RecalculateNormals();
+    }
+
+
+    // Finds the height of a chunks vertex. Very janky.
+    public float FindVertexHeight(Vector3 pos)
+    {
+        uint index = (uint)Mathf.Abs(pos.x + pos.z * c_MeshQuantity);
+
+        if (index >= m_Grid.vertices.Length) return m_Grid.vertices[m_Grid.vertices.Length].y;
+
+        //Debug.Log("Index: " + index + " Y: " + m_Grid.vertices[index].y);
+
+        return m_Grid.vertices[index].y;
     }
 
     

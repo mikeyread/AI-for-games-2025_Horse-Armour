@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using Unity.Jobs;
 using Unity.Mathematics;
-
 using UnityEngine;
 
 using static WorldOptions;
@@ -19,23 +18,26 @@ public class WorldGenerator : MonoBehaviour
     // Uses localised Chunk-Grid coordinates as a key to determine if a chunk already exists.
     private Dictionary<Vector3, Chunk> _ChunkBuffer;
     private List<Vector3> _ChunksToRender;
-    private PerlinNoise2D noise;
 
     private Vector3 w_PlayerPosition;
     private Vector3 w_RenderingChunkPosition;
     private Vector3 w_ChunkGridPosition;
 
+    // Camera parameter for Chunk Snapping, unused because the current implementation is janky.
+    private Vector3 minimumY;
+
 
     private void Awake()
     {
         if (seed != 0) Random.InitState(seed);
-        noise = new PerlinNoise2D();
 
         w_PlayerPosition = new Vector3();
         w_ChunkGridPosition = new Vector3();
 
         _ChunkBuffer = new Dictionary<Vector3, Chunk>();
         _ChunksToRender = new List<Vector3>();
+
+        minimumY = Vector3.zero;
     }
 
     private void Update()
@@ -47,6 +49,7 @@ public class WorldGenerator : MonoBehaviour
         w_ChunkGridPosition.z = Mathf.Floor(w_PlayerPosition.z + 0.5f);
 
         UpdateRenderedChunks();
+        //UpdateCameraHeight();
     }
 
 
@@ -65,18 +68,46 @@ public class WorldGenerator : MonoBehaviour
 
                 _ChunksToRender.Add(w_RenderingChunkPosition);
 
-                if (!_ChunkBuffer.ContainsKey(w_RenderingChunkPosition) && distance - 25f < RENDER_DISTANCE * RENDER_DISTANCE)
+                if (!_ChunkBuffer.ContainsKey(w_RenderingChunkPosition) && distance - 50f <= RENDER_DISTANCE * RENDER_DISTANCE)
                 {
                     _ChunkBuffer.Add(w_RenderingChunkPosition, new Chunk(w_RenderingChunkPosition));
                 }
             }
         }
     }
+
+    // very basic camera repositioner, very janky and likely won't be wholly used.
+    private void UpdateCameraHeight()
+    {
+        if (!_ChunkBuffer.ContainsKey(w_ChunkGridPosition)) return;
+
+        // Local position
+        Vector3 localPosition = (w_PlayerPosition - w_ChunkGridPosition) * CHUNK_QUAD_AMOUNT;
+        localPosition.x += CHUNK_QUAD_AMOUNT * CHUNK_QUAD_SCALAR;
+        localPosition.z += CHUNK_QUAD_AMOUNT * CHUNK_QUAD_SCALAR;
+
+        //Debug.Log(localPosition);
+
+        // Repositions based on the local position
+        minimumY = Camera.main.transform.position;
+        minimumY.y = Mathf.Max(minimumY.y, _ChunkBuffer[w_ChunkGridPosition].FindVertexHeight(localPosition));
+
+        Camera.main.transform.position = minimumY;
+    }
+
+    //foreach(var ID in _ChunksToRender)
+    //{
+    //    float distance = (ID - w_PlayerPosition).sqrMagnitude;
+    //    if (!_ChunkBuffer.ContainsKey(w_RenderingChunkPosition) && distance - 50f <= RENDER_DISTANCE * RENDER_DISTANCE)
+    //    {
+    //        _ChunkBuffer.Add(w_RenderingChunkPosition, new Chunk(w_RenderingChunkPosition));
+    //    }
+    //}
 }
 
 
 
-// LEGACY CODE FOR OLD CHUNK GENERATION SYSTEM
+// LEGACY CODE FOR OLD CHUNK GENERATION
 // Generates new chunk terrain while skipping any already existing chunks.
 //private void GenerateChunks(Vector2 position)
 //{

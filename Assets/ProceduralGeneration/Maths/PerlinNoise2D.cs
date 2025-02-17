@@ -131,6 +131,9 @@ public class PerlinNoise2D
         float xLerp = PerlinCosineLerp(bottomLeftCorner, bottomRightCorner, InterpolatedX);
         float yLerp = PerlinCosineLerp(topLeftCorner, topRightCorner, InterpolatedX);
 
+        float smooth1 = SmootherStep(xLerp);
+        float smooth2 = SmootherStep(yLerp);
+
         return PerlinCosineLerp(xLerp, yLerp, InterpolatedY);
     }
 }
