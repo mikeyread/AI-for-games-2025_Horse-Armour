@@ -3,9 +3,34 @@ using System.Collections.Generic;
 using Unity.VisualScripting.Dependencies.Sqlite;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Unity.Collections;
+using Unity.Jobs;
+using static UnityEngine.Rendering.VirtualTexturing.Debugging;
+using Unity.Burst;
+using Unity.Mathematics;
+
+//https://docs.unity3d.com/2022.3/Documentation/Manual/JobSystemParallelForJobs.html
+//https://github.com/ThousandAnt/ta-boids/blob/master/Assets/Scripts/ThousandAnt.Boids/Boids.cs
 
 public class FlockingManager : MonoBehaviour
 {
+    public struct testJob : IJob
+    {
+        public float a;
+        public float b;
+        public NativeArray<float> result;
+
+        public void Execute()
+        {
+            result[0] = a + b;
+        }
+    }
+    NativeArray<float> result;
+    JobHandle handle;
+
+
+
+
     //Array containing every flock entity
     public FlockingEntity[] flock;
     public FlockingEntity flockMember;
@@ -52,6 +77,9 @@ public class FlockingManager : MonoBehaviour
         //centrePosition = averagePosition / flock.Length;
         ////Debug.Log(centrePosition);
 
+
+
+        //Perform
         //Coherence();
 
         //Seperation();
@@ -60,11 +88,37 @@ public class FlockingManager : MonoBehaviour
 
 
 
-        
+
+        for (int i = 0; i < 4000; i++)
+        {
+            result = new NativeArray<float>(1, Allocator.TempJob);
+
+            testJob jobData = new testJob
+            {
+                a = 10,
+                b = 10,
+                result = result
+            };
+
+            // Schedule the job
+            handle = jobData.Schedule();
+        }
+
+   
+
 
 
 
     }
+
+    private void LateUpdate()
+    {
+        handle.Complete(); 
+
+        result.Dispose();
+    }
+
+
 
     void Coherence()
     {
@@ -93,23 +147,8 @@ public class FlockingManager : MonoBehaviour
 
         //}
 
-
-
     }
 
-    void Seperation()
-    {
-
-
-
-    }
-
-    void Alignment ()
-    {
-
-
-
-    }
 
 
 }
