@@ -68,15 +68,20 @@ public class WorldGenerator : MonoBehaviour
 
                 _ChunksToRender.Add(w_RenderingChunkPosition);
 
-                if (!_ChunkBuffer.ContainsKey(w_RenderingChunkPosition) && distance - 50f <= RENDER_DISTANCE * RENDER_DISTANCE)
+                if (!_ChunkBuffer.ContainsKey(w_RenderingChunkPosition) && distance - 75f <= RENDER_DISTANCE * RENDER_DISTANCE)
                 {
                     _ChunkBuffer.Add(w_RenderingChunkPosition, new Chunk(w_RenderingChunkPosition));
                 }
             }
         }
+
+        foreach(var chunk in _ChunkBuffer)
+        {
+            chunk.Value.CheckThread();
+        }
     }
 
-    // very basic camera repositioner, very janky and likely won't be wholly used.
+    // very basic camera repositioner, very janky and likely won't be used.
     private void UpdateCameraHeight()
     {
         if (!_ChunkBuffer.ContainsKey(w_ChunkGridPosition)) return;

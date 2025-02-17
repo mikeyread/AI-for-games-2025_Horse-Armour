@@ -1,4 +1,4 @@
-#pragma kernel ComputeBasicMesh
+#pragma kernel ComputeChunkMesh
 
 uniform float PI;
 uniform float4 globalPosition;
@@ -19,6 +19,10 @@ float SmootherStep(float value)
     return clamp(pow(value, 5) * 6 - pow(value, 4) * 15 + pow(value, 3) * 10, 0, 1);
 }
 
+float PerlinLerp(float left, float right, float percent)
+{
+    return percent * right - left;
+}
 
 float PerlinCosineLerp(float left, float right, float percent)
 {
@@ -51,11 +55,36 @@ float Noise(float2 pos) {
 }
 
 
-// Anakytical Derivative Noise that resembles natural erosion.
+// Finite Approximation Noise that resembles natural erosion.
 // https://www.scratchapixel.com/lessons/procedural-generation-virtual-worlds/perlin-noise-part-2/perlin-noise-computing-derivatives.html
-float NoiseDeriv(float2 pos)
+// https://www.youtube.com/watch?v=gsJHzBTPG0Y
+// https://www.youtube.com/watch?v=BFld4EBO2RE
+float NoiseFiniteApprox(float2 pos)
 {
-    return 1;
+    uint flooredX = (int) floor(pos.x);
+    uint flooredY = (int) floor(pos.y);
+    
+    float fractionX = frac(pos.x);
+    float fractionY = frac(pos.y);
+    
+    uint truePos = flooredX + flooredY * meshSize;
+    uint trueMeshScale = meshSize * meshSize;
+    
+    float bottomLeft = hash[truePos % trueMeshScale];
+    float bottomRight = hash[(truePos + 1) % trueMeshScale];
+    float topLeft = hash[(truePos + meshSize) % trueMeshScale];
+    float topRight = hash[(truePos + 1 + meshSize) % trueMeshScale];
+    
+    float interpolatedX = pos.x - flooredX;
+    float interpolatedY = pos.y - flooredY;
+    
+    float xLerp = PerlinCosineLerp(bottomLeft, bottomRight, interpolatedX);
+    float yLerp = PerlinCosineLerp(topLeft, topRight, interpolatedX);
+    
+    float xSmooth = SmootherStep(xLerp);
+    float ySmooth = SmootherStep(yLerp);
+    
+    return PerlinCosineLerp(xSmooth, ySmooth, interpolatedY);
 }
 
 
@@ -81,18 +110,18 @@ float FractalSum(float2 pos, float2 offset, int octaves, float freq, float amp, 
 }
 
 
-float FractalDerivative(float2 pos, float2 offset, int octaves, float freq, float amp, float pers, float lac)
+float FractalFiniteApprox(float2 pos, float2 offset, int octaves, float freq, float amp, float pers, float lac)
 {
     float sum = 0;
     float dsum = 0;
+    float totalSum = 0;
     
     pos = abs(pos + offset);
     for (int i = 0; i < octaves; i++)
     {
-        float y = NoiseDeriv(pos * freq);
-        dsum += y;
-        
-        sum += amp * dsum / (1 + dot(y, y));
+        sum += amp * Noise(pos * freq);
+        dsum += sum;
+        totalSum += amp;
         
         amp *= pers;
         freq *= lac;
@@ -127,17 +156,16 @@ float CurrentNoise(float2 pos)
 
 float TestNoise(float2 pos)
 {
-    float bumpMask1 = FractalSum(pos, float2(3400, -5100), 8, 0.001, 1, 0.5, 2, true, true);
+    //float valleyNoise = FractalSum(pos, float2(-29400, 5300), 6, 0.01, 12, 0.5, 2, true, false) * -1;
+    //float flattener = FractalSum(pos, float2(5430, -6820), 6, 0.0033, 12, 0.5, 2, false, true);
+    float baseDeriv = FractalFiniteApprox(pos, float2(5430, -6820), 12, 0.0033, 128, 0.5, 2);
     
-    float valleysMajor = FractalSum(pos, float2(3400, -5100), 8, 0.001, 64, 0.5, 2, true, false) * -1;
-    float valleysMinor = FractalSum(pos, float2(3400, -5100), 6, 0.0066, 8, 0.2, 2, true, false) * -1;
-    
-    return valleysMajor + valleysMinor - 64;
+    return baseDeriv;
 }
 
 
 [numthreads(16, 16, 1)]
-void ComputeBasicMesh(uint3 id : SV_DispatchThreadID)
+void ComputeChunkMesh(uint3 id : SV_DispatchThreadID)
 {
     if (id.x >= meshSize)
     {
@@ -152,7 +180,7 @@ void ComputeBasicMesh(uint3 id : SV_DispatchThreadID)
     
     float2 truePos = float2(xOffset + id.x * quadScale, zOffset + id.y * quadScale);
     
-    float y = CurrentNoise(truePos);
+    float y = TestNoise(truePos);
     
     vertices[vertexIndex] = float3(truePos.x, y, truePos.y);
     
