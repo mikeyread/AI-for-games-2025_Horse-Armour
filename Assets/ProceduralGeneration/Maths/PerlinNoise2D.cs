@@ -6,18 +6,19 @@ using UnityEngine;
 /// </summary>
 public class PerlinNoise2D
 {
-    public const int noiseQuality = 256;
+    public const int noiseQuality = 512;
     const int noiseIterator = noiseQuality - 1;
 
     /// <summary>
     /// A hash-table containing a large list of randomized floats that is initialized on creation of the Noise. It allows noise to be deterministic on the selection of a seed.
     /// </summary>
-    public static float[,] _Noise2D = new float[noiseQuality, noiseQuality];
+    public static float[,] _Noise2D;
 
 
     static PerlinNoise2D()
     {
         _Noise2D = new float[noiseQuality, noiseQuality];
+
         for (int noiseX = 0; noiseX < noiseIterator; noiseX++)
         {
             for (int noiseY = 0; noiseY < noiseIterator; noiseY++)

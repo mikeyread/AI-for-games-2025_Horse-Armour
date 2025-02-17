@@ -1,165 +1,136 @@
+using System.Collections;
 using System.Collections.Generic;
-using Unity.Mathematics;
-using Unity.VisualScripting.Antlr3.Runtime.Tree;
-using UnityEditor;
+using Unity.Properties;
+using Unity.VisualScripting;
 using UnityEngine;
 
-using static WorldOptions;
-
-
-// Chunks are mesh and collision regions which form a unified terrain, including mesh generation and loading/unloading tasks.
 public class Chunk {
-    
-    public GameObject chunk { get; private set; }
-    private Mesh terrain;
+
+    private GameObject o_Chunk;
+    private Mesh m_Grid;
+
+    public ComputeShader _ComputeShader;
+
+    public ComputeBuffer b_HashTable;
+    public ComputeBuffer b_Vertices;
+    public ComputeBuffer b_Normals;
+    public ComputeBuffer b_Indices;
+
+    private float c_MeshScale = WorldOptions.CHUNK_QUAD_SCALAR;
+    private int c_MeshQuantity = WorldOptions.CHUNK_QUAD_AMOUNT;
+    private int m_IndexLimit;
+
+    // Mesh and Object Settings
+    private Vector4 c_GlobalPosition;
+    private Vector3[] m_Vertices;
+    private Vector3[] m_Normals;
+    private int[] m_Indices;
 
 
-    public bool generated = false;
 
-    public Chunk(Vector3 position)
-    {
-        chunk = new GameObject("World Chunk");
+    public Chunk(Vector3 position) {
+        b_HashTable?.Dispose();
 
-        // Mesh Components
-        chunk.AddComponent<MeshFilter>();
-        chunk.AddComponent<MeshRenderer>();
-        terrain = new Mesh();
+        b_Vertices?.Dispose();
+        b_Normals?.Dispose();
+        b_Indices?.Dispose();
 
-        Vector3 offset = position * CHUNK_QUAD_SCALAR * CHUNK_QUAD_AMOUNT;
-        chunk.transform.position = offset;
+        m_IndexLimit = c_MeshQuantity * c_MeshQuantity;
 
+
+        if (o_Chunk == null)
+        {
+            o_Chunk = new GameObject("World Chunk");
+        }
+
+        if (m_Grid == null)
+        {
+            m_Grid = new Mesh();
+        }
+
+        if (_ComputeShader == null)
+        {
+            _ComputeShader = Object.Instantiate(Resources.Load<ComputeShader>("CS_Chunk"));
+        }
+
+        if (m_Vertices == null || m_Vertices.Length != m_IndexLimit)
+        {
+            m_Vertices = new Vector3[m_IndexLimit];
+        }
+
+        if (m_Indices == null || m_Indices.Length != m_IndexLimit)
+        {
+            m_Indices = new int[m_IndexLimit * 6];
+        }
+
+        if (o_Chunk.GetComponent<MeshFilter>() == null)
+        {
+            o_Chunk.AddComponent<MeshFilter>();
+
+        }
+
+        if (o_Chunk.GetComponent<MeshRenderer>() == null)
+        {
+            o_Chunk.AddComponent<MeshRenderer>();
+            o_Chunk.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Universal Render Pipeline/Simple Lit"));
+        }
+
+        c_GlobalPosition = position * (c_MeshQuantity * c_MeshScale - 1 * c_MeshScale);
+        
         GenerateMesh();
     }
 
-    /// <summary>
-    ///  Generates the Geometry Mesh of the Chunk
-    /// </summary>
-    private void GenerateMesh()
+
+    void GenerateMesh()
     {
-        if (generated) return;
+        b_Vertices = new ComputeBuffer(m_IndexLimit, sizeof(float) * 3);
+        b_Normals = new ComputeBuffer(m_IndexLimit, sizeof(float) * 3);
+        b_Indices = new ComputeBuffer(m_IndexLimit, sizeof(int) * 6);
 
-        List<Vector3> vertices = new List<Vector3>();
-        List<Vector3> normals = new List<Vector3>();
-        List<int> indices = new List<int>();
-
-        List<Vector2> uv = new List<Vector2>();
-        List<Color> colors = new List<Color>();
+        // Inserts the Perlin Hash Tables
+        b_HashTable = new ComputeBuffer(PerlinNoise2D.noiseQuality * PerlinNoise2D.noiseQuality, sizeof(float));
+        b_HashTable.SetData(PerlinNoise2D._Noise2D);
+        _ComputeShader.SetBuffer(0, "hash", b_HashTable);
 
 
-        float cornerX = chunk.transform.position.x - CHUNK_QUAD_AMOUNT / 2;
-        float cornerZ = chunk.transform.position.z - CHUNK_QUAD_AMOUNT / 2;
+        // Provides the Constants to the Kernel
+        _ComputeShader.SetInt("meshSize", c_MeshQuantity);
+        _ComputeShader.SetFloat("quadScale", c_MeshScale);
 
-        for (int z = 0; z < CHUNK_QUAD_AMOUNT + 1; z++)
-        {
-            for (int x = 0; x < CHUNK_QUAD_AMOUNT + 1; x++)
-            {
-                float trueX = cornerX + (x * CHUNK_QUAD_SCALAR);
-                float trueZ = cornerZ + (z * CHUNK_QUAD_SCALAR);
+        _ComputeShader.SetFloat("PI", Mathf.PI);
+        _ComputeShader.SetVector("globalPosition", c_GlobalPosition);
 
-                // Basic layered noise
-                float y = ChunkNoise(trueX, trueZ);
-                vertices.Add(new Vector3(x * CHUNK_QUAD_SCALAR, y, z * CHUNK_QUAD_SCALAR));
 
-                y = y / 200;
-                colors.Add(new Color(y, y, y));
-                
-                if (x % 2 == 0)
-                {
-                    uv.Add(new Vector2(1, 1));
-                } else
-                {
-                    uv.Add(new Vector2(0, 0));
-                }
+        // Assigns our buffers that will have data written to and from the Kernel
+        _ComputeShader.SetBuffer(0, "vertices", b_Vertices);
+        _ComputeShader.SetBuffer(0, "normals", b_Normals);
+        _ComputeShader.SetBuffer(0, "indices", b_Indices);
 
-                if (z < CHUNK_QUAD_AMOUNT && x < CHUNK_QUAD_AMOUNT)
-                {
-                    int zOffset = z * (CHUNK_QUAD_AMOUNT + 1);
 
-                    indices.Add(x + zOffset + 1);
-                    indices.Add(x + zOffset);
-                    indices.Add(x + 1 + zOffset + CHUNK_QUAD_AMOUNT);
+        // Dispatches the Kernel for processing.
+        _ComputeShader.Dispatch(0, m_IndexLimit / 16, m_IndexLimit / 16, 1);
 
-                    indices.Add(x + 1 + zOffset);
-                    indices.Add(x + 1 + zOffset + CHUNK_QUAD_AMOUNT);
-                    indices.Add(x + 2 + zOffset + CHUNK_QUAD_AMOUNT);
-                }
-            }
-        }
+        b_Vertices.GetData(m_Vertices);
+        b_Indices.GetData(m_Indices);
 
-        // Bad Normal Generation, buggy at chunk borders, but it works otherwise.
-        for (int z = 0; z < CHUNK_QUAD_AMOUNT + 1; z++)
-        {
-            for (int x = 0; x < CHUNK_QUAD_AMOUNT + 1; x++)
-            {
-                int zOffset = z * (CHUNK_QUAD_AMOUNT + 1);
+        b_HashTable.Dispose();
+        b_Vertices.Dispose();
+        b_Normals.Dispose();
+        b_Indices.Dispose();
 
-                Vector3 o1;
-                Vector3 o2;
-                if (z >= CHUNK_QUAD_AMOUNT)
-                {
-                    if (x >= CHUNK_QUAD_AMOUNT)
-                    {
-                        o1 = vertices[x + zOffset - 1] - vertices[x + zOffset];
-                        o2 = vertices[x + zOffset - 1 - CHUNK_QUAD_AMOUNT] - vertices[x + zOffset];
-                        normals.Add(Vector3.Cross(o2, o1).normalized);
-                        continue;
-                    }
+        m_Grid.vertices = m_Vertices;
+        m_Grid.normals = m_Normals;
+        m_Grid.triangles = m_Indices;
 
-                    o1 = vertices[x + zOffset + 1] - vertices[x + zOffset];
-                    o2 = vertices[x + zOffset + 1 - CHUNK_QUAD_AMOUNT] - vertices[x + zOffset];
+        o_Chunk.GetComponent<MeshFilter>().mesh = m_Grid;
 
-                    normals.Add(Vector3.Cross(o2, o1).normalized);
-                    continue;
-                }
-                else
-                {
-                    o1 = vertices[x + zOffset + 1] - vertices[x + zOffset];
-                    o2 = vertices[x + zOffset + 1 + CHUNK_QUAD_AMOUNT] - vertices[x + zOffset];
-
-                    normals.Add(Vector3.Cross(o2, o1).normalized);
-                }
-            }
-        }
-
-        //Debug.Log("Normals: " + normals.Count + " to Vertices:" + vertices.Count);
-
-        terrain.Clear();
-
-        terrain.vertices = vertices.ToArray();
-        terrain.triangles = indices.ToArray();
-        terrain.normals = normals.ToArray();
-
-        terrain.colors = colors.ToArray();
-        terrain.uv = uv.ToArray();
-
-        chunk.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Particles/Standard Unlit"));
-        
-        chunk.GetComponent<MeshFilter>().mesh = terrain;
-        chunk.GetComponent<MeshFilter>().mesh.Optimize();
-
-        generated = true;
+        // TODO: Manual Normal generation, using  recalculation does not account for chunk borders properly.
+        o_Chunk.GetComponent<MeshFilter>().mesh.RecalculateNormals();
     }
 
-
-    public float ChunkNoise(float x, float y)
-    {
-        float roads = PerlinNoise2D.PerlinNoise(x, y, -3974, 8, 0.1f, 12f, 0.5f, 2f, true, true);
-        float valleys = PerlinNoise2D.PerlinNoise(x, y, 1272, 8, 0.01f, 12f, 0.5f, 2f, true, false);
-        float variation = PerlinNoise2D.PerlinNoise(x, y, -7612, 12, 0.15f, 3f, 0.5f, 2f, false, false);
-        float mountainous = PerlinNoise2D.PerlinNoise(x, y, -16183, 8, 0.002f, 128f, 0.5f, 2f) - 64f;
-
-
-        return (mountainous - valleys) + (variation * roads);
-    }
-
-
-    public void Reload()
-    {
-        chunk.SetActive(true);
-    }
-
+    
     public void Unload()
     {
-        chunk.SetActive(false);
+        GameObject.Destroy(o_Chunk);
     }
 }

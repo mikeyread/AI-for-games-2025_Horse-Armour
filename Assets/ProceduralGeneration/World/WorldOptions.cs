@@ -5,7 +5,7 @@ using UnityEditor;
 [InitializeOnLoad]
 static class WorldOptions {
     public const int CHUNK_QUAD_AMOUNT = 128;
-    public const float CHUNK_QUAD_SCALAR = 1f;
+    public const float CHUNK_QUAD_SCALAR = 0.5f;
 
     public const int RENDER_DISTANCE = 16;
 }
