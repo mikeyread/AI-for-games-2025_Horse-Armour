@@ -7,7 +7,7 @@ using Unity.Collections;
 using Unity.Jobs;
 using static UnityEngine.Rendering.VirtualTexturing.Debugging;
 using Unity.Burst;
-using Unity.Mathematics;
+//using Unity.Mathematics;
 
 //https://docs.unity3d.com/2022.3/Documentation/Manual/JobSystemParallelForJobs.html
 //https://github.com/ThousandAnt/ta-boids/blob/master/Assets/Scripts/ThousandAnt.Boids/Boids.cs
@@ -53,6 +53,9 @@ public class FlockingManager : MonoBehaviour
             flock[i].manager = this;
         }
     }
+
+
+
 
     // Update is called once per frame
     void Update()
