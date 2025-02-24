@@ -1,0 +1,71 @@
+#pragma kernel ChunkPostVertex
+
+RWStructuredBuffer<float3> vertices;
+RWStructuredBuffer<float3> normals;
+
+uniform uint meshSize;
+uniform float quadScale;
+
+
+float Magnitude(float3 vec)
+{
+    return sqrt(pow(vec.x, 2) + pow(vec.y, 2) + pow(vec.z, 2));
+}
+
+
+float3 Normalize(float3 vec)
+{
+    return float3(vec.x / Magnitude(vec), vec.y / Magnitude(vec), vec.z / Magnitude(vec));
+}
+
+
+// Computes Normals using already processed vertex positions.
+[numthreads(32,32,1)]
+void ChunkPostVertex (uint3 id : SV_DispatchThreadID) {
+    uint normalIndex = id.x + (id.y * meshSize);
+    
+    normals[normalIndex] = float3(0, 1, 0);
+    float offset = 1 * quadScale;
+    
+    // Find Chunk Border
+    if (normalIndex > meshSize - 1 && normalIndex < meshSize * meshSize - meshSize && normalIndex % meshSize != 0 && (normalIndex + 1) % meshSize != 0)
+    {
+        if (normalIndex % 2 != 0)
+        {
+            // Calculate the four triangle n
+            float3 BLT = cross(vertices[normalIndex - meshSize] - vertices[normalIndex], vertices[normalIndex - 1] - vertices[normalIndex]);
+            float3 BRT = cross(vertices[normalIndex + 1] - vertices[normalIndex], vertices[normalIndex + meshSize] - vertices[normalIndex]);
+            float3 TLT = cross(vertices[normalIndex - 1] - vertices[normalIndex], vertices[normalIndex + 1] - vertices[normalIndex]);
+            float3 TRT = cross(vertices[normalIndex + meshSize] - vertices[normalIndex], vertices[normalIndex - meshSize] - vertices[normalIndex]);
+            
+            normals[normalIndex] = Normalize(BLT + BRT + TLT + TRT);
+        }
+        else
+        {
+            normals[normalIndex] = Normalize(float3(0, 1, 0));
+        }
+    }
+    else
+    {
+        normals[normalIndex] = Normalize(float3(0, 1, 0));
+    }
+    
+    /* For Vertex Border
+    if (normalIndex <= meshSize - 1)                    // Bottom
+    {
+        vertices[normalIndex] += float3(0, 1, 0);
+    }
+    if (normalIndex >= meshSize * meshSize - meshSize)  // Top
+    {
+        vertices[normalIndex] += float3(0, 1, 0);
+    }
+    if (normalIndex % meshSize == 0)                    // Left
+    {
+        vertices[normalIndex] += float3(0, 1, 0);
+    }
+    if ((normalIndex + 1) % meshSize == 0)              // Right
+    {
+        vertices[normalIndex] += float3(0, 1, 0);
+    }
+    */
+}

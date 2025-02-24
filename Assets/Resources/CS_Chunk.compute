@@ -180,7 +180,7 @@ void ComputeChunkMesh(uint3 id : SV_DispatchThreadID)
     
     float2 truePos = float2(xOffset + id.x * quadScale, zOffset + id.y * quadScale);
     
-    float y = TestNoise(truePos);
+    float y = CurrentNoise(truePos);
     
     vertices[vertexIndex] = float3(truePos.x, y, truePos.y);
     

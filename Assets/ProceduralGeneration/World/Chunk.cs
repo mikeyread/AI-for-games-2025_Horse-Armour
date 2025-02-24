@@ -39,7 +39,6 @@ public class Chunk {
 
     public Chunk(Vector3 position) {
         b_HashTable?.Dispose();
-
         b_Vertices?.Dispose();
         b_Normals?.Dispose();
         b_Indices?.Dispose();

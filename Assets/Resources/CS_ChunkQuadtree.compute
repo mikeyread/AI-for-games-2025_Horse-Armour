@@ -1,0 +1,142 @@
+#pragma kernel ComputeChunkMesh
+
+uniform float PI;
+uniform float4 globalPosition;
+uniform float2 globalOffset;
+
+StructuredBuffer<float> hash;
+
+RWStructuredBuffer<float3> vertices;
+RWStructuredBuffer<int> indices;
+
+uniform int meshSize;
+uniform float quadScale;
+
+
+float SmootherStep(float value)
+{
+    return clamp(pow(value, 5) * 6 - pow(value, 4) * 15 + pow(value, 3) * 10, 0, 1);
+}
+
+float PerlinLerp(float left, float right, float percent)
+{
+    return percent * right - left;
+}
+
+float PerlinCosineLerp(float left, float right, float percent)
+{
+    return ((cos(PI * percent) + 1) / 2) * left + ((1 - cos(PI * percent)) / 2 * right);
+}
+
+
+float Noise(float2 pos)
+{
+    uint flooredX = (int)floor(pos.x);
+    uint flooredY = (int)floor(pos.y);
+    
+    uint truePos = flooredX + flooredY * meshSize;
+    uint trueMeshScale = meshSize * meshSize;
+    
+    float bottomLeft = hash[truePos % trueMeshScale];
+    float bottomRight = hash[(truePos + 1) % trueMeshScale];
+    float topLeft = hash[(truePos + meshSize) % trueMeshScale];
+    float topRight = hash[(truePos + 1 + meshSize) % trueMeshScale];
+    
+    float interpolatedX = pos.x - flooredX;
+    float interpolatedY = pos.y - flooredY;
+    
+    float xLerp = PerlinCosineLerp(bottomLeft, bottomRight, interpolatedX);
+    float yLerp = PerlinCosineLerp(topLeft, topRight, interpolatedX);
+    
+    float xSmooth = SmootherStep(xLerp);
+    float ySmooth = SmootherStep(yLerp);
+    
+    return PerlinCosineLerp(xSmooth, ySmooth, interpolatedY);
+}
+
+
+float FractalSum(float2 pos, float2 offset, int octaves, float freq, float amp, float pers, float lac, bool turbulent, bool normalized)
+{
+    float sum = 0;
+    float totalSum = 0;
+    
+    pos = abs(pos + offset);
+    
+    for (int i = 0; i < octaves; i++)
+    {
+        sum += amp * Noise(pos * freq);
+        totalSum += amp;
+        
+        amp *= pers;
+        freq *= lac;
+    }
+    
+    if (turbulent == true)
+        sum = abs(0 - abs(sum - totalSum / 2) * 2);
+    if (normalized == true)
+        sum = sum / totalSum;
+
+    return sum;
+}
+
+
+float CurrentNoise(float2 pos) {
+    float CenterDistance = (pos.x * pos.x + pos.y * pos.y) / 333000000;
+    float centerMod = PerlinCosineLerp(0, 1, clamp(CenterDistance, 0.11, 1));
+    
+    float MountainMask1 = FractalSum(pos, float2(440053, -585100), 12, 0.00025, 4096, 0.33, 3, true, false);
+    float MountainMask2 = FractalSum(pos, float2(340053, 285100), 8, 0.00033, 1024, 0.33, 3, true, false) * -1;
+    float mountainFlattener = FractalSum(pos, float2(920053, 485100), 8, 0.0001, 1, 0.5, 2, true, true);
+    
+    
+    return (MountainMask1 + MountainMask2) * min(centerMod, mountainFlattener);
+}
+
+
+[numthreads(32, 32, 1)]
+void ComputeChunkMesh(uint3 id : SV_DispatchThreadID) {
+    if (id.x >= meshSize)
+    {
+        return;
+    }
+    
+    uint vertexIndex = id.x + (id.y * meshSize);
+    
+    // Centers the chunk
+    float xOffset = globalPosition.x - meshSize * quadScale / 2;
+    float zOffset = globalPosition.z - meshSize * quadScale / 2;
+    float2 truePos = float2(xOffset + id.x * quadScale, zOffset + id.y * quadScale);
+    
+    float y = 0;
+    //float y = CurrentNoise(truePos);
+
+    
+    //vertices[vertexIndex] = float3(truePos.x, 0, truePos.y);
+    vertices[vertexIndex] = float3(truePos.x, y, truePos.y);
+    
+    if (id.x < meshSize - 1 && id.y < meshSize - 1)
+    {
+        uint triangleIndex = 6 * vertexIndex;
+        
+        if (vertexIndex % 2 == 0)
+        {
+            indices[triangleIndex] = vertexIndex + 1;
+            indices[triangleIndex + 1] = vertexIndex;
+            indices[triangleIndex + 2] = vertexIndex + meshSize;
+        
+            indices[triangleIndex + 3] = vertexIndex + meshSize;
+            indices[triangleIndex + 4] = vertexIndex + meshSize + 1;
+            indices[triangleIndex + 5] = vertexIndex + 1;
+        }
+        else
+        {
+            indices[triangleIndex] = vertexIndex + meshSize + 1;
+            indices[triangleIndex + 1] = vertexIndex + 1;
+            indices[triangleIndex + 2] = vertexIndex;
+        
+            indices[triangleIndex + 3] = vertexIndex;
+            indices[triangleIndex + 4] = vertexIndex + meshSize;
+            indices[triangleIndex + 5] = vertexIndex + meshSize + 1;
+        }
+    }
+}
