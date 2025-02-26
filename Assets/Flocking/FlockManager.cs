@@ -1,157 +1,148 @@
-using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting.Dependencies.Sqlite;
-using UnityEngine;
-using UnityEngine.Rendering;
+using System.Drawing;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
-using static UnityEngine.Rendering.VirtualTexturing.Debugging;
-using Unity.Burst;
-//using Unity.Mathematics;
+using Unity.Mathematics;
+using UnityEngine;
+using UnityEngine.Jobs;
+using URandom = UnityEngine.Random;
 
-//https://docs.unity3d.com/2022.3/Documentation/Manual/JobSystemParallelForJobs.html
-//https://github.com/ThousandAnt/ta-boids/blob/master/Assets/Scripts/ThousandAnt.Boids/Boids.cs
-
-public class FlockingManager : MonoBehaviour
+namespace Flocking
 {
-    public struct testJob : IJob
+
+    // Mark the class as unsafe because we want to make use of pointers.
+    public unsafe class FlockManager : RunnerTest
     {
-        public float a;
-        public float b;
-        public NativeArray<float> result;
 
-        public void Execute()
+        public Transform FlockMember;
+        public bool UseSingleThread;
+
+        private NativeArray<float> noiseOffsets;
+        private NativeArray<float4x4> srcMatrices;
+        private NativeArray<float4x4> dstMatrices;
+        private Transform[] transforms;
+        private TransformAccessArray transformAccessArray;
+        private JobHandle flockingHandle;
+        private float3* center;
+
+        private void Start()
         {
-            result[0] = a + b;
-        }
-    }
-    NativeArray<float> result;
-    JobHandle handle;
+            // We spawn n GameObjects that we will manipulate. We store the positions and their associated noise offsets.
+            // The nosie offsts are useful for providing a unique sense of movement per element.
+            transforms = new Transform[flockSize];
+            srcMatrices = new NativeArray<float4x4>(transforms.Length, Allocator.Persistent);
+            dstMatrices = new NativeArray<float4x4>(transforms.Length, Allocator.Persistent);
+            noiseOffsets = new NativeArray<float>(transforms.Length, Allocator.Persistent);
 
-
-
-
-    //Array containing every flock entity
-    public FlockingEntity[] flock;
-    public FlockingEntity flockMember;
-
-    //The radius at which flocking entities can detect eachother
-    //public float detectionRadius;
-
-    //Value of average position of all flock members
-    protected Vector3 averagePosition = Vector3.zero;
-    protected Vector3 centrePosition = Vector3.zero;
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        //Spawns in all of the flock entities, and assigns itself as a reference to them
-        for (int i = 0; i < flock.Length; i++)
-        {
-            flock[i]=((FlockingEntity)Instantiate(flockMember, transform.position + (new Vector3(Random.value, Random.value, Random.value))*50, transform.rotation));
-            flock[i].ID = i;
-            flock[i].manager = this;
-        }
-    }
-
-
-
-
-    // Update is called once per frame
-    void Update()
-    {
-        //Calculating average position of every cube
-        //Vector3 averagePosition = new Vector3 (0,0,0);
-        //foreach (var entity in flock)
-        //{
-
-        //    //This could probably work, but would need to move functionality into each entitiy instead of it being in the manager
-        //    foreach (var otherEntitiy in flock)
-        //    {
-        //        if ((entity != otherEntitiy) && ((entity.transform.position - otherEntitiy.transform.position).magnitude < detectionRadius))
-        //        {
-        //            averagePosition += entity.transform.position;
-        //        }
-        //    }
-
-
-        //    //averagePosition += entity.transform.position;
-        //}
-        //centrePosition = averagePosition / flock.Length;
-        ////Debug.Log(centrePosition);
-
-
-
-        //Perform
-        //Coherence();
-
-        //Seperation();
-
-        //Alignment();
-
-
-
-
-        for (int i = 0; i < 4000; i++)
-        {
-            result = new NativeArray<float>(1, Allocator.TempJob);
-
-            testJob jobData = new testJob
+            for (int i = 0; i < flockSize; i++)
             {
-                a = 10,
-                b = 10,
-                result = result
-            };
+                var pos = transform.position + URandom.insideUnitSphere * Radius;
+                var rotation = Quaternion.Slerp(transform.rotation, URandom.rotation, 0.3f);
+                transforms[i] = GameObject.Instantiate(FlockMember, pos, rotation) as Transform;
+                srcMatrices[i] = transforms[i].localToWorldMatrix;
+                noiseOffsets[i] = URandom.value * 10f;
+            }
 
-            // Schedule the job
-            handle = jobData.Schedule();
+            // Create the transform access array with a cache of Transforms.
+            transformAccessArray = new TransformAccessArray(transforms);
+
+            // To pass from a Job struct back to our MonoBehaviour, we need to use a pointer. In newer packages there is
+            // NativeReference<T> which serves the same purpose as a pointer. This allows us to write the position
+            // back to our pointer so we can read it later in the main thread to use.
+            center = (float3*)UnsafeUtility.Malloc(
+                UnsafeUtility.SizeOf<float3>(),
+                UnsafeUtility.AlignOf<float3>(),
+                Allocator.Persistent);
+
+            // Set the pointer to the float3 to be the default value, or float3.zero.
+            UnsafeUtility.MemSet(center, default, UnsafeUtility.SizeOf<float3>());
         }
 
-   
-
-
-
-
-    }
-
-    private void LateUpdate()
-    {
-        handle.Complete(); 
-
-        result.Dispose();
-    }
-
-
-
-    void Coherence()
-    {
-        //Cohesion calculation - Takes the Average position of all cubes, calculates each cubes unit vector towards it,
-        //then adds a force to make them head there
-        foreach (var entity in flock)
+        private void OnDisable()
         {
+            // Before this component is disabled, make sure that all the jobs are completed.
+            flockingHandle.Complete();
 
+            // Then we dispose all the NativeArrays we allocate.
+            if (srcMatrices.IsCreated)
+            {
+                srcMatrices.Dispose();
+            }
 
+            if (dstMatrices.IsCreated)
+            {
+                dstMatrices.Dispose();
+            }
 
+            if (noiseOffsets.IsCreated)
+            {
+                noiseOffsets.Dispose();
+            }
 
-            //Unit vector from current cube in loop to the centre
-            Vector3 unitVecTowardsCentre = (1 / (centrePosition - entity.transform.position).magnitude) * (centrePosition - entity.transform.position);
+            if (transformAccessArray.isCreated)
+            {
+                transformAccessArray.Dispose();
+            }
 
-            //Adding an impulse to head towards the centre
-            //entity.rBody.AddForce(unitVecTowardsCentre);
-            //Debug.Log(unitVecTowardsCentre);
+            if (center != null)
+            {
+                UnsafeUtility.Free(center, Allocator.Persistent);
+                center = null;
+            }
         }
 
+        private unsafe void Update()
+        {
+            // At the start of the frame, we ensure that all the jobs scheduled are completed.
+            flockingHandle.Complete();
 
-        //for (int i = 0; i < flock.length; i++) 
-        //{
-        //    foreach
+            // Write the contents from the pointer back to our position.
+            transform.position = *center;
 
+            // Copy the contents from the NativeArray to our TransformAccess
+            var copyTransformJob = new CopyTransformJob
+            {
+                Src = srcMatrices
+            }.Schedule(transformAccessArray);
 
+            // Use a separate single thread to calculate the average center of the flock.
+            var avgCenterJob = new AverageCenterJob
+            {
+                Matrices = srcMatrices,
+                Center = center,
+            }.Schedule();
 
-        //}
+            JobHandle flockingJob;
 
+            //Test about changing destination during runtime
+            //Destination.position = new Vector3(0, 0, 0);
+
+      
+                flockingJob = new BatchedflockingJob
+                {
+                    Weights = Weights,
+                    Goal = Destination.position,
+                    NoiseOffsets = noiseOffsets,
+                    Time = Time.time,
+                    DeltaTime = Time.deltaTime,
+                    MaxDist = SeparationDistance,
+                    Speed = MaxSpeed,
+                    RotationSpeed = RotationSpeed,
+                    Size = srcMatrices.Length,
+                    Src = srcMatrices,
+                    Dst = dstMatrices
+                }.Schedule(transforms.Length, 32);
+ 
+            // Combine all jobs to a single dependency, so we can pass this single dependency to the
+            // CopyMatrixJob. The CopyMatrixJob needs to wait until all jobs are done so we can avoid
+            // concurrency issues.
+            var combinedJob = JobHandle.CombineDependencies(avgCenterJob, flockingJob, copyTransformJob);
+
+            flockingHandle = new CopyMatrixJob
+            {
+                Dst = srcMatrices,
+                Src = dstMatrices
+            }.Schedule(srcMatrices.Length, 32, combinedJob);
+        }
     }
-
-
-
 }

@@ -1,14 +1,14 @@
 using UnityEngine;
 
-namespace ThousandAnt.Boids
+namespace Flocking
 {
     public abstract class RunnerTest : MonoBehaviour
     {
 
-        public BoidWeights Weights = BoidWeights.Default();
+        public FlockingWeights Weights = FlockingWeights.Default();
         public float SeparationDistance = 10f;
         public float Radius = 20f;
-        public int Size = 512;
+        public int flockSize = 512;
         public float MaxSpeed = 6f;
         public float RotationSpeed = 4f;
 

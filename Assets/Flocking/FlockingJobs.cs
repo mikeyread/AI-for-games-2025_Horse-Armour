@@ -5,19 +5,19 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine.Jobs;
 
-namespace ThousandAnt.Boids
+namespace Flocking
 {
 
     [System.Serializable]
-    public struct BoidWeights
+    public struct FlockingWeights
     {
         public float TendencyWeight;
         public float AlignmentWeight;
         public float NoiseWeight;
 
-        public static BoidWeights Default()
+        public static FlockingWeights Default()
         {
-            return new BoidWeights
+            return new FlockingWeights
             {
                 TendencyWeight = 1,
                 AlignmentWeight = 1,
@@ -85,7 +85,7 @@ namespace ThousandAnt.Boids
     public struct BoidJob : IJob
     {
 
-        public BoidWeights Weights;
+        public FlockingWeights Weights;
         public float Time;
         public float DeltaTime;
         public float MaxDist;
@@ -164,10 +164,10 @@ namespace ThousandAnt.Boids
     }
 
     [BurstCompile]
-    public struct BatchedBoidJob : IJobParallelFor
+    public struct BatchedflockingJob : IJobParallelFor
     {
 
-        public BoidWeights Weights;
+        public FlockingWeights Weights;
         public float Time;
         public float DeltaTime;
         public float MaxDist;
