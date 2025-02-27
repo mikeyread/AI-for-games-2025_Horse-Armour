@@ -11,8 +11,11 @@ namespace Flocking
     [System.Serializable]
     public struct FlockingWeights
     {
+        //
         public float TendencyWeight;
+        //How Important staying aligned in direction is - Higher = less turning / random rotation
         public float AlignmentWeight;
+        //How much random movement occurs - Higher = more variability between actors
         public float NoiseWeight;
 
         public static FlockingWeights Default()

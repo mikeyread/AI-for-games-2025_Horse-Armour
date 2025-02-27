@@ -10,7 +10,7 @@ using URandom = UnityEngine.Random;
 namespace Flocking
 {
 
-    // Mark the class as unsafe because we want to make use of pointers.
+    //Unsafe class for pointers
     public unsafe class FlockManager : RunnerTest
     {
 
@@ -18,7 +18,9 @@ namespace Flocking
         public bool UseSingleThread;
 
         private NativeArray<float> noiseOffsets;
+        //Input data
         private NativeArray<float4x4> srcMatrices;
+        //Outpud data
         private NativeArray<float4x4> dstMatrices;
         private Transform[] transforms;
         private TransformAccessArray transformAccessArray;
@@ -114,8 +116,7 @@ namespace Flocking
 
             JobHandle flockingJob;
 
-            //Test about changing destination during runtime
-            //Destination.position = new Vector3(0, 0, 0);
+            UpdateDestination(Destination.position + new Vector3(20,0,0));
 
       
                 flockingJob = new BatchedflockingJob
@@ -144,5 +145,19 @@ namespace Flocking
                 Src = dstMatrices
             }.Schedule(srcMatrices.Length, 32, combinedJob);
         }
+
+
+
+
+        public unsafe void UpdateDestination(Vector3 newDest)
+        {
+            Destination.position = newDest;
+        }
     }
+
+
+
+    
+
+
 }
