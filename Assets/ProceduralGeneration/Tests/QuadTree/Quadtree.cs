@@ -6,7 +6,7 @@ using UnityEngine;
 static class QuadTreeParameters
 {
     public static int maxDepth = 5;
-    public static float GridSphereCheck = 1.5f;
+    public static float GridSphereCheck = 2.5f;
 }
 
 

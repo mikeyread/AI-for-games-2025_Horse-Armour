@@ -25,47 +25,25 @@ void ChunkPostVertex (uint3 id : SV_DispatchThreadID) {
     uint normalIndex = id.x + (id.y * meshSize);
     
     normals[normalIndex] = float3(0, 1, 0);
-    float offset = 1 * quadScale;
     
-    // Find Chunk Border
+    // Finds if the normal vertex isn't a part of the Vertex Skirt
     if (normalIndex > meshSize - 1 && normalIndex < meshSize * meshSize - meshSize && normalIndex % meshSize != 0 && (normalIndex + 1) % meshSize != 0)
     {
-        if (normalIndex % 2 != 0)
+        float3 UpperTri = cross(vertices[normalIndex + meshSize] - vertices[normalIndex], vertices[normalIndex + 1] - vertices[normalIndex]);
+        normals[normalIndex] = UpperTri;
+        
+        // Find the actual vertex edge of the grid mesh
+        if (normalIndex < meshSize * 2 || normalIndex % meshSize == 1)
         {
-            // Calculate the four triangle n
-            float3 BLT = cross(vertices[normalIndex - meshSize] - vertices[normalIndex], vertices[normalIndex - 1] - vertices[normalIndex]);
-            float3 BRT = cross(vertices[normalIndex + 1] - vertices[normalIndex], vertices[normalIndex + meshSize] - vertices[normalIndex]);
-            float3 TLT = cross(vertices[normalIndex - 1] - vertices[normalIndex], vertices[normalIndex + 1] - vertices[normalIndex]);
-            float3 TRT = cross(vertices[normalIndex + meshSize] - vertices[normalIndex], vertices[normalIndex - meshSize] - vertices[normalIndex]);
-            
-            normals[normalIndex] = Normalize(BLT + BRT + TLT + TRT);
+            //vertices[normalIndex] = float3(vertices[normalIndex].x, vertices[normalIndex].y + 1, vertices[normalIndex].z);
         }
-        else
+        else if (normalIndex > meshSize * meshSize - meshSize * 2 || normalIndex % meshSize == 0)
         {
-            normals[normalIndex] = Normalize(float3(0, 1, 0));
+            //vertices[normalIndex] = float3(vertices[normalIndex].x, vertices[normalIndex].y + 1, vertices[normalIndex].z);
         }
     }
     else
     {
-        normals[normalIndex] = Normalize(float3(0, 1, 0));
+        vertices[normalIndex] = float3(vertices[normalIndex].x, -250, vertices[normalIndex].z);
     }
-    
-    /* For Vertex Border
-    if (normalIndex <= meshSize - 1)                    // Bottom
-    {
-        vertices[normalIndex] += float3(0, 1, 0);
-    }
-    if (normalIndex >= meshSize * meshSize - meshSize)  // Top
-    {
-        vertices[normalIndex] += float3(0, 1, 0);
-    }
-    if (normalIndex % meshSize == 0)                    // Left
-    {
-        vertices[normalIndex] += float3(0, 1, 0);
-    }
-    if ((normalIndex + 1) % meshSize == 0)              // Right
-    {
-        vertices[normalIndex] += float3(0, 1, 0);
-    }
-    */
 }

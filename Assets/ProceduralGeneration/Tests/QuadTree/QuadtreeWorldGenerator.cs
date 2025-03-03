@@ -16,7 +16,7 @@ public class QuadtreeWorldGenerator : MonoBehaviour
     private void Update()
     {
         q_tree.UpdateGrid(transform.position);
-        //Debug.Log("Active quantity of grids: " + q_tree.GetActive().Count);
+        Debug.Log("Active quantity of grids: " + q_tree.GetActive().Count);
     }
 
 
@@ -59,6 +59,7 @@ public class QuadTreeChunk {
 
     public QuadTreeChunk(Quad parent)
     {
+        // Dispose of any buffers if they happen to have present allocations.
         b_HashTable?.Dispose();
         b_Vertices?.Dispose();
         b_Normals?.Dispose();
@@ -66,21 +67,26 @@ public class QuadTreeChunk {
 
         parentGrid = parent;
 
-        m_IndexLimit = (c_MeshQuantity + 1) * (c_MeshQuantity + 1);
+        m_IndexLimit = (c_MeshQuantity + 2) * (c_MeshQuantity + 2);
 
+        // Scalars for the Chunk LOD and Mesh Scale
         float ParentScale = parentGrid.TRCorner_Position().x - parentGrid.BLCorner_Position().x;
         c_MeshScale = WorldOptions.CHUNK_QUAD_SCALAR * (ParentScale / ((WorldOptions.CHUNK_QUAD_AMOUNT - 1) * WorldOptions.CHUNK_QUAD_SCALAR));
 
+        // The chunk object initilisation
         chunkObject = new("Chunk");
         chunkMesh = new();
 
+        // Compute Shader Initialisation
         _ComputeShader = Object.Instantiate(Resources.Load<ComputeShader>("CS_ChunkQuadtree"));
         _NormalComputeShader = Object.Instantiate(Resources.Load<ComputeShader>("CS_ChunkPostVertex"));
         
+        // Initialises Mesh Data.
         m_Vertices = new Vector3[m_IndexLimit];
         m_Normals = new Vector3[m_IndexLimit];
         m_Indices = new int[m_IndexLimit * 6];
 
+        // Chunk Object Mesh component initialisation.
         if (chunkObject.GetComponent<MeshFilter>() == null) chunkObject.AddComponent<MeshFilter>();
         if (chunkObject.GetComponent<MeshRenderer>() == null) {
             chunkObject.AddComponent<MeshRenderer>();
@@ -99,7 +105,7 @@ public class QuadTreeChunk {
         b_HashTable.SetData(PerlinNoise2D._Noise2D);
         _ComputeShader.SetBuffer(0, "hash", b_HashTable);
 
-        _ComputeShader.SetInt("meshSize", c_MeshQuantity + 1);
+        _ComputeShader.SetInt("meshSize", c_MeshQuantity + 2);
         _ComputeShader.SetFloat("quadScale", c_MeshScale);
 
         _ComputeShader.SetFloat("PI", Mathf.PI);
@@ -123,7 +129,7 @@ public class QuadTreeChunk {
         _NormalComputeShader.SetBuffer(0, "vertices", b_Vertices);
         _NormalComputeShader.SetBuffer(0, "normals", b_Normals);
 
-        _NormalComputeShader.SetInt("meshSize", c_MeshQuantity + 1);
+        _NormalComputeShader.SetInt("meshSize", c_MeshQuantity + 2);
         _NormalComputeShader.SetFloat("quadScale", c_MeshScale);
 
         _NormalComputeShader.Dispatch(0, m_IndexLimit / 32, m_IndexLimit / 32, 1);

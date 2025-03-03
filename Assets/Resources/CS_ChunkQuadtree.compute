@@ -107,8 +107,7 @@ void ComputeChunkMesh(uint3 id : SV_DispatchThreadID) {
     float zOffset = globalPosition.z - meshSize * quadScale / 2;
     float2 truePos = float2(xOffset + id.x * quadScale, zOffset + id.y * quadScale);
     
-    float y = 0;
-    //float y = CurrentNoise(truePos);
+    float y = CurrentNoise(truePos) - 64;
 
     
     //vertices[vertexIndex] = float3(truePos.x, 0, truePos.y);
@@ -118,25 +117,12 @@ void ComputeChunkMesh(uint3 id : SV_DispatchThreadID) {
     {
         uint triangleIndex = 6 * vertexIndex;
         
-        if (vertexIndex % 2 == 0)
-        {
-            indices[triangleIndex] = vertexIndex + 1;
-            indices[triangleIndex + 1] = vertexIndex;
-            indices[triangleIndex + 2] = vertexIndex + meshSize;
+        indices[triangleIndex] = vertexIndex + 1;
+        indices[triangleIndex + 1] = vertexIndex;
+        indices[triangleIndex + 2] = vertexIndex + meshSize;
         
-            indices[triangleIndex + 3] = vertexIndex + meshSize;
-            indices[triangleIndex + 4] = vertexIndex + meshSize + 1;
-            indices[triangleIndex + 5] = vertexIndex + 1;
-        }
-        else
-        {
-            indices[triangleIndex] = vertexIndex + meshSize + 1;
-            indices[triangleIndex + 1] = vertexIndex + 1;
-            indices[triangleIndex + 2] = vertexIndex;
-        
-            indices[triangleIndex + 3] = vertexIndex;
-            indices[triangleIndex + 4] = vertexIndex + meshSize;
-            indices[triangleIndex + 5] = vertexIndex + meshSize + 1;
-        }
+        indices[triangleIndex + 3] = vertexIndex + meshSize;
+        indices[triangleIndex + 4] = vertexIndex + meshSize + 1;
+        indices[triangleIndex + 5] = vertexIndex + 1;
     }
 }
