@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Flocking
 {
-    public abstract class RunnerTest : MonoBehaviour
+    public abstract class FlockValues : MonoBehaviour
     {
 
         public FlockingWeights Weights = FlockingWeights.Default();

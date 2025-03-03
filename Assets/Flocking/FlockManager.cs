@@ -11,7 +11,7 @@ namespace Flocking
 {
 
     //Unsafe class for pointers
-    public unsafe class FlockManager : RunnerTest
+    public unsafe class FlockManager : FlockValues
     {
 
         public Transform FlockMember;
@@ -116,24 +116,24 @@ namespace Flocking
 
             JobHandle flockingJob;
 
-            UpdateDestination(Destination.position + new Vector3(20,0,0));
+            UpdateDestination(Destination.position + new Vector3(20, 0, 0));
 
-      
-                flockingJob = new BatchedflockingJob
-                {
-                    Weights = Weights,
-                    Goal = Destination.position,
-                    NoiseOffsets = noiseOffsets,
-                    Time = Time.time,
-                    DeltaTime = Time.deltaTime,
-                    MaxDist = SeparationDistance,
-                    Speed = MaxSpeed,
-                    RotationSpeed = RotationSpeed,
-                    Size = srcMatrices.Length,
-                    Src = srcMatrices,
-                    Dst = dstMatrices
-                }.Schedule(transforms.Length, 32);
- 
+
+            flockingJob = new BatchedflockingJob
+            {
+                Weights = Weights,
+                Goal = Destination.position,
+                NoiseOffsets = noiseOffsets,
+                Time = Time.time,
+                DeltaTime = Time.deltaTime,
+                MaxDist = SeparationDistance,
+                Speed = MaxSpeed,
+                RotationSpeed = RotationSpeed,
+                Size = srcMatrices.Length,
+                Src = srcMatrices,
+                Dst = dstMatrices
+            }.Schedule(transforms.Length, 32);
+
             // Combine all jobs to a single dependency, so we can pass this single dependency to the
             // CopyMatrixJob. The CopyMatrixJob needs to wait until all jobs are done so we can avoid
             // concurrency issues.
@@ -157,7 +157,7 @@ namespace Flocking
 
 
 
-    
+
 
 
 }
