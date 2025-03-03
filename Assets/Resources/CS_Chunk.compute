@@ -1,0 +1,203 @@
+#pragma kernel ComputeChunkMesh
+
+uniform float PI;
+uniform float4 globalPosition;
+uniform float2 globalOffset;
+
+StructuredBuffer<float> hash;
+
+RWStructuredBuffer<float3> vertices;
+RWStructuredBuffer<float3> normals;
+RWStructuredBuffer<int> indices;
+
+uniform int meshSize;
+uniform float quadScale;
+
+
+float SmootherStep(float value)
+{
+    return clamp(pow(value, 5) * 6 - pow(value, 4) * 15 + pow(value, 3) * 10, 0, 1);
+}
+
+float PerlinLerp(float left, float right, float percent)
+{
+    return percent * right - left;
+}
+
+float PerlinCosineLerp(float left, float right, float percent)
+{
+    return ((cos(PI * percent) + 1) / 2) * left + ((1 - cos(PI * percent)) / 2 * right);
+}
+
+
+float Noise(float2 pos) {
+    uint flooredX = (int)floor(pos.x);
+    uint flooredY = (int)floor(pos.y);
+    
+    uint truePos = flooredX + flooredY * meshSize;
+    uint trueMeshScale = meshSize * meshSize;
+    
+    float bottomLeft    = hash[truePos % trueMeshScale];
+    float bottomRight   = hash[(truePos + 1) % trueMeshScale];
+    float topLeft       = hash[(truePos + meshSize) % trueMeshScale];
+    float topRight      = hash[(truePos + 1 + meshSize) % trueMeshScale];
+    
+    float interpolatedX = pos.x - flooredX;
+    float interpolatedY = pos.y - flooredY;
+    
+    float xLerp = PerlinCosineLerp(bottomLeft, bottomRight, interpolatedX);
+    float yLerp = PerlinCosineLerp(topLeft, topRight, interpolatedX);
+    
+    float xSmooth = SmootherStep(xLerp);
+    float ySmooth = SmootherStep(yLerp);
+    
+    return PerlinCosineLerp(xSmooth, ySmooth, interpolatedY);
+}
+
+
+// Finite Approximation Noise that resembles natural erosion.
+// https://www.scratchapixel.com/lessons/procedural-generation-virtual-worlds/perlin-noise-part-2/perlin-noise-computing-derivatives.html
+// https://www.youtube.com/watch?v=gsJHzBTPG0Y
+// https://www.youtube.com/watch?v=BFld4EBO2RE
+float NoiseFiniteApprox(float2 pos)
+{
+    uint flooredX = (int) floor(pos.x);
+    uint flooredY = (int) floor(pos.y);
+    
+    float fractionX = frac(pos.x);
+    float fractionY = frac(pos.y);
+    
+    uint truePos = flooredX + flooredY * meshSize;
+    uint trueMeshScale = meshSize * meshSize;
+    
+    float bottomLeft = hash[truePos % trueMeshScale];
+    float bottomRight = hash[(truePos + 1) % trueMeshScale];
+    float topLeft = hash[(truePos + meshSize) % trueMeshScale];
+    float topRight = hash[(truePos + 1 + meshSize) % trueMeshScale];
+    
+    float interpolatedX = pos.x - flooredX;
+    float interpolatedY = pos.y - flooredY;
+    
+    float xLerp = PerlinCosineLerp(bottomLeft, bottomRight, interpolatedX);
+    float yLerp = PerlinCosineLerp(topLeft, topRight, interpolatedX);
+    
+    float xSmooth = SmootherStep(xLerp);
+    float ySmooth = SmootherStep(yLerp);
+    
+    return PerlinCosineLerp(xSmooth, ySmooth, interpolatedY);
+}
+
+
+float FractalSum(float2 pos, float2 offset, int octaves, float freq, float amp, float pers, float lac, bool turbulent, bool normalized) {
+    float sum = 0;
+    float totalSum = 0;
+    
+    pos = abs(pos + offset);
+    
+    for (int i = 0; i < octaves; i++)
+    {
+        sum += amp * Noise(pos * freq);
+        totalSum += amp;
+        
+        amp *= pers;
+        freq *= lac;
+    }
+    
+    if (turbulent == true) sum = 0 - abs(sum - totalSum / 2) * 2;
+    if (normalized == true) sum = sum / totalSum;
+
+    return sum;
+}
+
+
+float FractalFiniteApprox(float2 pos, float2 offset, int octaves, float freq, float amp, float pers, float lac)
+{
+    float sum = 0;
+    float dsum = 0;
+    float totalSum = 0;
+    
+    pos = abs(pos + offset);
+    for (int i = 0; i < octaves; i++)
+    {
+        sum += amp * Noise(pos * freq);
+        dsum += sum;
+        totalSum += amp;
+        
+        amp *= pers;
+        freq *= lac;
+    }
+
+    return sum;
+}
+
+
+float CurrentNoise(float2 pos)
+{
+    //float mountainRidgeMask1 = FractalSum(pos, float2(-7400, 5300), 8, 0.001, 12, 0.5, 2, true, false) * -1 + 10.5;
+    //float mountainRidgeMask2 = FractalSum(pos, float2(4712, 2447), 8, 0.00033, 6, 0.5, 2, false, true);
+    //float mountainRidges = pow(2, mountainRidgeMask1 * mountainRidgeMask2);
+    
+    float mountainMask = pow(2, 12 * FractalSum(pos, float2(3400, -5100), 6, 0.0005, 1, 0.5, 2, false, true));
+    
+    float hillyMask = FractalSum(pos, float2(-1229, 730), 8, 0.0033, 32, 0.5, 2, true, false);
+    float hillyMask2 = FractalSum(pos, float2(-9172, -291), 8, 0.0011, 1, 0.5, 2, true, true);
+    float hills = hillyMask * hillyMask2;
+    
+    float rivers = FractalSum(pos, float2(5120, 6812), 8, 0.0033, 32, 0.5, 2, true, false) * -1;
+    
+    float bumpMask1 = FractalSum(pos, float2(3400, -5100), 12, 0.05, 5, 0.5, 2, false, false);
+    float bumpMask2 = FractalSum(pos, float2(-3200, 3500), 10, 0.033, 3, 0.5, 2, true, false);
+    float flattener = FractalSum(pos, float2(-6014, -10200), 6, 0.001, 1, 0.5, 2, false, true);
+    float bump = bumpMask1 + bumpMask2;
+    
+    return (mountainMask + hills + bump - rivers) * flattener;
+}
+
+
+float TestNoise(float2 pos)
+{
+    //float valleyNoise = FractalSum(pos, float2(-29400, 5300), 6, 0.01, 12, 0.5, 2, true, false) * -1;
+    //float flattener = FractalSum(pos, float2(5430, -6820), 6, 0.0033, 12, 0.5, 2, false, true);
+    float baseDeriv = FractalFiniteApprox(pos, float2(5430, -6820), 12, 0.0033, 128, 0.5, 2);
+    
+    return baseDeriv;
+}
+
+
+[numthreads(16, 16, 1)]
+void ComputeChunkMesh(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= meshSize)
+    {
+        return;
+    }
+    
+    uint vertexIndex = id.x + (id.y * meshSize);
+    
+    // Centers the chunk
+    float xOffset = globalPosition.x - meshSize * quadScale / 2;
+    float zOffset = globalPosition.z - meshSize * quadScale / 2;
+    
+    float2 truePos = float2(xOffset + id.x * quadScale, zOffset + id.y * quadScale);
+    
+    float y = CurrentNoise(truePos);
+    
+    vertices[vertexIndex] = float3(truePos.x, y, truePos.y);
+    
+    // TODO apply normals by creating a skirt of vertices, calculating the legitimate vertex normals, then clean up the skirt.
+    normals[vertexIndex] = float3(0, 1, 0);
+    
+    
+    if (id.x < meshSize - 1 && id.y < meshSize - 1)
+    {
+        uint triangleIndex = 6 * vertexIndex;
+        
+        indices[triangleIndex] = vertexIndex + 1;
+        indices[triangleIndex + 1] = vertexIndex;
+        indices[triangleIndex + 2] = vertexIndex + meshSize;
+        
+        indices[triangleIndex + 3] = vertexIndex + meshSize;
+        indices[triangleIndex + 4] = vertexIndex + meshSize + 1;
+        indices[triangleIndex + 5] = vertexIndex + 1;
+    }
+}
