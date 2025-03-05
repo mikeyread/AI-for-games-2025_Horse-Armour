@@ -115,8 +115,6 @@ namespace Flocking
                 var currentPos = current.Position();
                 var perceivedSize = Size - 1;
 
-                Debug.Log("Size: " + perceivedSize);
-
                 var separation = float3.zero;
                 var alignment = float3.zero;
                 var cohesion = float3.zero;
@@ -132,6 +130,7 @@ namespace Flocking
                     var b = Src[i];
                     var other = b.Position();
 
+
                     // Perform separation
                     separation += TransformExtensions.SeparationVector(currentPos, other, MaxDist);
 
@@ -140,6 +139,7 @@ namespace Flocking
 
                     // Perform cohesion
                     cohesion += other;
+
                 }
 
                 var avg = 1f / perceivedSize;
@@ -209,21 +209,27 @@ namespace Flocking
                     continue;
                 }
 
+                
+
                 var b = Src[i];
                 float3 other = b.Position();
+
+
+                //float distBetween = Vector3.Distance(other, currentPos);
 
                 // Perform separation
                 separation += TransformExtensions.SeparationVector(currentPos, other, MaxDist);
 
-                //if (currentPos <= )
+                //if (distBetween < 1)
                 //{
 
-                //}
-                // Perform alignment
-                alignment += b.Forward();
+                    // Perform alignment
+                    alignment += b.Forward();
 
-                // Perform cohesion
-                cohesion += other;
+                    // Perform cohesion
+                    cohesion += other;
+                //}
+
             }
 
             var avg = 1f / perceivedSize;
