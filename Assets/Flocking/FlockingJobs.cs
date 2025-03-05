@@ -3,6 +3,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
+using UnityEngine;
 using UnityEngine.Jobs;
 
 namespace Flocking
@@ -114,6 +115,8 @@ namespace Flocking
                 var currentPos = current.Position();
                 var perceivedSize = Size - 1;
 
+                Debug.Log("Size: " + perceivedSize);
+
                 var separation = float3.zero;
                 var alignment = float3.zero;
                 var cohesion = float3.zero;
@@ -191,12 +194,12 @@ namespace Flocking
         public void Execute(int index)
         {
             var current = Src[index];
-            var currentPos = current.Position();
-            var perceivedSize = Size - 1;
+            float3 currentPos = current.Position();
+            int perceivedSize = Size - 1;
 
-            var separation = float3.zero;
-            var alignment = float3.zero;
-            var cohesion = float3.zero;
+            float3 separation = float3.zero;
+            float3 alignment = float3.zero;
+            float3 cohesion = float3.zero;
             var tendency = math.normalizesafe(Goal - currentPos) * Weights.TendencyWeight;
 
             for (int i = 0; i < Size; i++)
@@ -207,11 +210,15 @@ namespace Flocking
                 }
 
                 var b = Src[i];
-                var other = b.Position();
+                float3 other = b.Position();
 
                 // Perform separation
                 separation += TransformExtensions.SeparationVector(currentPos, other, MaxDist);
 
+                //if (currentPos <= )
+                //{
+
+                //}
                 // Perform alignment
                 alignment += b.Forward();
 

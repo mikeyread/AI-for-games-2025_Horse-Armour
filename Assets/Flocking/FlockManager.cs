@@ -116,7 +116,7 @@ namespace Flocking
 
             JobHandle flockingJob;
 
-            UpdateDestination(Destination.position + new Vector3(20, 0, 0));
+            //UpdateDestination(Destination.position);
 
 
             flockingJob = new BatchedflockingJob
