@@ -85,89 +85,89 @@ namespace Flocking
         }
     }
 
-    [BurstCompile]
-    public struct BoidJob : IJob
-    {
+    //[BurstCompile]
+    //public struct BoidJob : IJob
+    //{
 
-        public FlockingWeights Weights;
-        public float Time;
-        public float DeltaTime;
-        public float MaxDist;
-        public float Speed;
-        public float RotationSpeed;
-        public int Size;
-        public float3 Goal;
+    //    public FlockingWeights Weights;
+    //    public float Time;
+    //    public float DeltaTime;
+    //    public float MaxDist;
+    //    public float Speed;
+    //    public float RotationSpeed;
+    //    public int Size;
+    //    public float3 Goal;
 
-        [ReadOnly]
-        public NativeArray<float> NoiseOffsets;
+    //    [ReadOnly]
+    //    public NativeArray<float> NoiseOffsets;
 
-        [ReadOnly]
-        public NativeArray<float4x4> Src;
+    //    [ReadOnly]
+    //    public NativeArray<float4x4> Src;
 
-        [WriteOnly]
-        public NativeArray<float4x4> Dst;
+    //    [WriteOnly]
+    //    public NativeArray<float4x4> Dst;
 
-        public void Execute()
-        {
-            for (int m = 0; m < Size; m++)
-            {
-                var current = Src[m];
-                var currentPos = current.Position();
-                var perceivedSize = Size - 1;
+    //    public void Execute()
+    //    {
+    //        for (int m = 0; m < Size; m++)
+    //        {
+    //            var current = Src[m];
+    //            var currentPos = current.Position();
+    //            var perceivedSize = Size - 1;
 
-                var separation = float3.zero;
-                var alignment = float3.zero;
-                var cohesion = float3.zero;
-                var tendency = math.normalizesafe(Goal - currentPos) * Weights.TendencyWeight;
+    //            var separation = float3.zero;
+    //            var alignment = float3.zero;
+    //            var cohesion = float3.zero;
+    //            var tendency = math.normalizesafe(Goal - currentPos) * Weights.TendencyWeight;
 
-                for (int i = 0; i < Size; i++)
-                {
-                    if (i == m)
-                    {
-                        continue;
-                    }
+    //            for (int i = 0; i < Size; i++)
+    //            {
+    //                if (i == m)
+    //                {
+    //                    continue;
+    //                }
 
-                    var b = Src[i];
-                    var other = b.Position();
+    //                var b = Src[i];
+    //                var other = b.Position();
 
 
-                    // Perform separation
-                    separation += TransformExtensions.SeparationVector(currentPos, other, MaxDist);
+    //                // Perform separation
+    //                separation += TransformExtensions.SeparationVector(currentPos, other, MaxDist);
 
-                    // Perform alignment
-                    alignment += b.Forward();
+    //                // Perform alignment
+    //                alignment += b.Forward();
 
-                    // Perform cohesion
-                    cohesion += other;
+    //                // Perform cohesion
+    //                cohesion += other;
 
-                }
+    //            }
 
-                var avg = 1f / perceivedSize;
+    //            var avg = 1f / perceivedSize;
 
-                alignment *= avg;
-                cohesion *= avg;
-                cohesion = math.normalizesafe(cohesion - currentPos);
-                var direction = separation +
-                                 Weights.AlignmentWeight * alignment +
-                                 cohesion +
-                                 Weights.TendencyWeight * tendency;
+    //            alignment *= avg;
+    //            cohesion *= avg;
+    //            cohesion = math.normalizesafe(cohesion - currentPos);
+    //            var direction = separation +
+    //                             Weights.AlignmentWeight * alignment +
+    //                             cohesion +
+    //                             Weights.TendencyWeight * tendency;
 
-                var targetRotation = current.Forward().QuaternionBetween(math.normalizesafe(direction));
-                var finalRotation = current.Rotation();
+    //            var targetRotation = current.Forward().QuaternionBetween(math.normalizesafe(direction));
+    //            var finalRotation = current.Rotation();
 
-                if (!targetRotation.Equals(current.Rotation()))
-                {
-                    finalRotation = math.lerp(finalRotation.value, targetRotation.value, RotationSpeed * DeltaTime);
-                }
+    //            if (!targetRotation.Equals(current.Rotation()))
+    //            {
+    //                finalRotation = math.lerp(finalRotation.value, targetRotation.value, RotationSpeed * DeltaTime);
+    //            }
 
-                var pNoise = math.abs(noise.cnoise(new float2(Time, NoiseOffsets[m])) * 2f - 1f);
-                var speedNoise = Speed * (1f + pNoise * Weights.NoiseWeight * 0.9f);
-                var finalPosition = currentPos + current.Forward() * speedNoise * DeltaTime;
+    //            var pNoise = math.abs(noise.cnoise(new float2(Time, NoiseOffsets[m])) * 2f - 1f);
+    //            var speedNoise = Speed * (1f + pNoise * Weights.NoiseWeight * 0.9f);
+    //            var finalPosition = currentPos + current.Forward() * speedNoise * DeltaTime;
 
-                Dst[m] = float4x4.TRS(finalPosition, finalRotation, new float3(1));
-            }
-        }
-    }
+    //            Dst[m] = float4x4.TRS(finalPosition, finalRotation, new float3(1));
+    //        }
+    //    }
+    //}
 
     [BurstCompile]
     public struct BatchedflockingJob : IJobParallelFor
@@ -210,25 +210,20 @@ namespace Flocking
                 }
 
                 
-
+                
                 var b = Src[i];
                 float3 other = b.Position();
 
 
-                //float distBetween = Vector3.Distance(other, currentPos);
-
                 // Perform separation
                 separation += TransformExtensions.SeparationVector(currentPos, other, MaxDist);
 
-                //if (distBetween < 1)
-                //{
+                // Perform alignment
+                alignment += b.Forward();
 
-                    // Perform alignment
-                    alignment += b.Forward();
-
-                    // Perform cohesion
-                    cohesion += other;
-                //}
+                // Perform cohesion
+                cohesion += other;
+                
 
             }
 

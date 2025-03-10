@@ -596,7 +596,7 @@ MonoBehaviour:
     NoiseWeight: 1
   SeparationDistance: 10
   Radius: 20
-  flockSize: 512
+  flockSize: 0
   MaxSpeed: 6
   RotationSpeed: 4
   Destination: {fileID: 1939948567}
@@ -725,8 +725,8 @@ MonoBehaviour:
     AlignmentWeight: 1
     NoiseWeight: 1
   SeparationDistance: 10
-  Radius: 20
-  flockSize: 512
+  Radius: 40
+  flockSize: 100
   MaxSpeed: 6
   RotationSpeed: 4
   Destination: {fileID: 1771076878}
