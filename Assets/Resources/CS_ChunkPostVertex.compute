@@ -2,48 +2,50 @@
 
 RWStructuredBuffer<float3> vertices;
 RWStructuredBuffer<float3> normals;
+RWStructuredBuffer<float4> color;
 
 uniform uint meshSize;
 uniform float quadScale;
 
-
-float Magnitude(float3 vec)
+float3 lerpFloat3(float3 lhs, float3 rhs, float lerp)
 {
-    return sqrt(pow(vec.x, 2) + pow(vec.y, 2) + pow(vec.z, 2));
+    return lhs + (rhs - lhs) * lerp;
 }
 
 
-float3 Normalize(float3 vec)
+float3 minFloat3(float3 lhs, float3 rhs)
 {
-    return float3(vec.x / Magnitude(vec), vec.y / Magnitude(vec), vec.z / Magnitude(vec));
+    return float3(min(lhs.x, rhs.x), min(lhs.y, rhs.y), min(lhs.z, rhs.z));
+}
+
+float3 maxFloat3(float3 lhs, float3 rhs)
+{
+    return float3(max(lhs.x, rhs.x), max(lhs.y, rhs.y), max(lhs.z, rhs.z));
 }
 
 
-// Computes Normals using already processed vertex positions.
+// Forces the outermost layer of Vertices to create a skirt around the chunk to prevent gaps between LOD's
 [numthreads(32,32,1)]
 void ChunkPostVertex (uint3 id : SV_DispatchThreadID) {
     uint normalIndex = id.x + (id.y * meshSize);
     
-    normals[normalIndex] = float3(0, 1, 0);
     
-    // Finds if the normal vertex isn't a part of the Vertex Skirt
-    if (normalIndex > meshSize - 1 && normalIndex < meshSize * meshSize - meshSize && normalIndex % meshSize != 0 && (normalIndex + 1) % meshSize != 0)
+    float3 col = float3(0, 0, 0);
+    if (vertices[normalIndex].y < -100)
     {
-        float3 UpperTri = cross(vertices[normalIndex + meshSize] - vertices[normalIndex], vertices[normalIndex + 1] - vertices[normalIndex]);
-        normals[normalIndex] = UpperTri;
-        
-        // Find the actual vertex edge of the grid mesh
-        if (normalIndex < meshSize * 2 || normalIndex % meshSize == 1)
-        {
-            //vertices[normalIndex] = float3(vertices[normalIndex].x, vertices[normalIndex].y + 1, vertices[normalIndex].z);
-        }
-        else if (normalIndex > meshSize * meshSize - meshSize * 2 || normalIndex % meshSize == 0)
-        {
-            //vertices[normalIndex] = float3(vertices[normalIndex].x, vertices[normalIndex].y + 1, vertices[normalIndex].z);
-        }
+        col = lerpFloat3(float3(0.3, 0.15, 0.05), float3(0.11, 0, 1), abs(vertices[normalIndex].y / 2000));
     }
     else
     {
-        vertices[normalIndex] = float3(vertices[normalIndex].x, -250, vertices[normalIndex].z);
+        col = lerpFloat3(float3(0.11, 0.66, 0), float3(0.5, 0.2, 0.33), abs(vertices[normalIndex].y / 666));
+    }
+    
+    color[normalIndex] = float4(col, 1);
+    
+    // Forces the outermost layer of Vertices to create a skirt around the chunk to prevent gaps between LOD's
+    if (normalIndex > meshSize - 1 && normalIndex < meshSize * meshSize - meshSize && normalIndex % meshSize != 0 && (normalIndex + 1) % meshSize != 0) { }
+    else
+    {
+        vertices[normalIndex] = float3(vertices[normalIndex].x, vertices[normalIndex].y - 250, vertices[normalIndex].z);
     }
 }
