@@ -1,0 +1,15 @@
+#pragma kernel CSMain
+
+RWTexture2D<float4> Result;
+StructuredBuffer<float> hash;
+
+
+// https://www.reddit.com/r/Unity3D/comments/fl1y7l/are_you_able_to_send_a_2d_array_into_a_compute/
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    float xPos = hash[id.x + id.y * id.x + 1];
+    float yPos = hash[id.x * id.y + id.y + 1];
+    
+    Result[id.xy] = float4(xPos, xPos, xPos, 0.0);
+}

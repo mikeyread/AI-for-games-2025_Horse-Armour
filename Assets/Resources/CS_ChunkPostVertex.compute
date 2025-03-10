@@ -1,0 +1,51 @@
+#pragma kernel ChunkPostVertex
+
+RWStructuredBuffer<float3> vertices;
+RWStructuredBuffer<float3> normals;
+RWStructuredBuffer<float4> color;
+
+uniform uint meshSize;
+uniform float quadScale;
+
+float3 lerpFloat3(float3 lhs, float3 rhs, float lerp)
+{
+    return lhs + (rhs - lhs) * lerp;
+}
+
+
+float3 minFloat3(float3 lhs, float3 rhs)
+{
+    return float3(min(lhs.x, rhs.x), min(lhs.y, rhs.y), min(lhs.z, rhs.z));
+}
+
+float3 maxFloat3(float3 lhs, float3 rhs)
+{
+    return float3(max(lhs.x, rhs.x), max(lhs.y, rhs.y), max(lhs.z, rhs.z));
+}
+
+
+// Forces the outermost layer of Vertices to create a skirt around the chunk to prevent gaps between LOD's
+[numthreads(32,32,1)]
+void ChunkPostVertex (uint3 id : SV_DispatchThreadID) {
+    uint normalIndex = id.x + (id.y * meshSize);
+    
+    
+    float3 col = float3(0, 0, 0);
+    if (vertices[normalIndex].y < -100)
+    {
+        col = lerpFloat3(float3(0.3, 0.15, 0.05), float3(0.11, 0, 1), abs(vertices[normalIndex].y / 2000));
+    }
+    else
+    {
+        col = lerpFloat3(float3(0.11, 0.66, 0), float3(0.5, 0.2, 0.33), abs(vertices[normalIndex].y / 666));
+    }
+    
+    color[normalIndex] = float4(col, 1);
+    
+    // Forces the outermost layer of Vertices to create a skirt around the chunk to prevent gaps between LOD's
+    if (normalIndex > meshSize - 1 && normalIndex < meshSize * meshSize - meshSize && normalIndex % meshSize != 0 && (normalIndex + 1) % meshSize != 0) { }
+    else
+    {
+        vertices[normalIndex] = float3(vertices[normalIndex].x, vertices[normalIndex].y - 250, vertices[normalIndex].z);
+    }
+}
