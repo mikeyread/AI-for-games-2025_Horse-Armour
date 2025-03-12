@@ -15,7 +15,7 @@ namespace Flocking
     {
 
         public Transform FlockMember;
-        public bool UseSingleThread;
+        public bool LockYPosition;
 
         private NativeArray<float> noiseOffsets;
         //Input data
@@ -118,21 +118,47 @@ namespace Flocking
 
             //UpdateDestination(Destination.position);
 
-
-            flockingJob = new BatchedflockingJob
+            if (LockYPosition)
             {
-                Weights = Weights,
-                Goal = Destination.position,
-                NoiseOffsets = noiseOffsets,
-                Time = Time.time,
-                DeltaTime = Time.deltaTime,
-                MaxDist = SeparationDistance,
-                Speed = MaxSpeed,
-                RotationSpeed = RotationSpeed,
-                Size = srcMatrices.Length,
-                Src = srcMatrices,
-                Dst = dstMatrices
-            }.Schedule(transforms.Length, 32);
+                //Figure out grabbing the Y position to lock to surface
+                flockingJob = new BoidJob
+                {
+                    Weights = Weights,
+                    Goal = new float3(Destination.position.x, 0, Destination.position.z),
+                    NoiseOffsets = noiseOffsets,
+                    Time = Time.time,
+                    DeltaTime = Time.deltaTime,
+                    MaxDist = SeparationDistance,
+                    Speed = MaxSpeed,
+                    RotationSpeed = RotationSpeed,
+                    Size = srcMatrices.Length,
+                    Src = srcMatrices,
+                    Dst = dstMatrices
+                }.Schedule();
+            }
+            else
+            {
+                flockingJob = new BatchedflockingJob
+                {
+                    Weights = Weights,
+                    Goal = Destination.position,
+                    NoiseOffsets = noiseOffsets,
+                    Time = Time.time,
+                    DeltaTime = Time.deltaTime,
+                    MaxDist = SeparationDistance,
+                    Speed = MaxSpeed,
+                    RotationSpeed = RotationSpeed,
+                    Size = srcMatrices.Length,
+                    Src = srcMatrices,
+                    Dst = dstMatrices
+                }.Schedule(transforms.Length, 32);
+            }
+
+            
+
+
+
+
 
             // Combine all jobs to a single dependency, so we can pass this single dependency to the
             // CopyMatrixJob. The CopyMatrixJob needs to wait until all jobs are done so we can avoid
