@@ -131,6 +131,8 @@ namespace Flocking
                     var other = new float3 (b.Position().x, 0, b.Position().z);
 
 
+                    
+
                     // Perform separation
                     separation += TransformExtensions.SeparationVector(currentPos, other, MaxDist);
 
@@ -167,6 +169,9 @@ namespace Flocking
                 Dst[m] = float4x4.TRS(finalPosition, finalRotation, new float3(1));
             }
         }
+
+
+
     }
 
     [BurstCompile]

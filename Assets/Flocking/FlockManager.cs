@@ -5,6 +5,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Jobs;
+using UnityEngine.UIElements;
 using URandom = UnityEngine.Random;
 
 namespace Flocking
@@ -118,6 +119,8 @@ namespace Flocking
 
             //UpdateDestination(Destination.position);
 
+            BatchOverlapSphere();
+
             if (LockYPosition)
             {
                 //Figure out grabbing the Y position to lock to surface
@@ -173,7 +176,26 @@ namespace Flocking
         }
 
 
+        void BatchOverlapSphere()
+        {
+            var commands = new NativeArray<OverlapSphereCommand>(1, Allocator.TempJob);
+            var results = new NativeArray<ColliderHit>(3, Allocator.TempJob);
 
+
+            for (int i  = 0; i < srcMatrices.Length - 1; i++)
+            {
+                commands[i] = new OverlapSphereCommand(srcMatrices[i].Position(), 10f, QueryParameters.Default);
+
+            }
+
+            OverlapSphereCommand.ScheduleBatch(commands, results, 1, 3).Complete();
+
+            foreach (var hit in results)
+                Debug.Log(hit.collider.name);
+
+            commands.Dispose();
+            results.Dispose();
+        }
 
         public unsafe void UpdateDestination(Vector3 newDest)
         {
