@@ -99,6 +99,16 @@ namespace Flocking
             // At the start of the frame, we ensure that all the jobs scheduled are completed.
             flockingHandle.Complete();
 
+            foreach (var i in dstMatrices)
+            {
+                Debug.DrawLine(i.Position(), new Vector3(i.Position().x, 10000, i.Position().z));
+
+                if (Physics.Linecast(i.Position(), new Vector3(i.Position().x, 10000, i.Position().z)))
+                {
+                    Debug.Log("HIT");
+                }
+            }
+
             // Write the contents from the pointer back to our position.
             transform.position = *center;
 
@@ -119,12 +129,12 @@ namespace Flocking
 
             //UpdateDestination(Destination.position);
 
-            BatchOverlapSphere();
+            //BatchOverlapSphere();
 
             if (LockYPosition)
             {
                 //Figure out grabbing the Y position to lock to surface
-                flockingJob = new BoidJob
+                flockingJob = new YLocked
                 {
                     Weights = Weights,
                     Goal = new float3(Destination.position.x, 0, Destination.position.z),
@@ -173,6 +183,10 @@ namespace Flocking
                 Dst = srcMatrices,
                 Src = dstMatrices
             }.Schedule(srcMatrices.Length, 32, combinedJob);
+
+
+
+
         }
 
 
@@ -182,16 +196,16 @@ namespace Flocking
             var results = new NativeArray<ColliderHit>(3, Allocator.TempJob);
 
 
-            for (int i  = 0; i < srcMatrices.Length - 1; i++)
-            {
-                commands[i] = new OverlapSphereCommand(srcMatrices[i].Position(), 10f, QueryParameters.Default);
+            //for (int i  = 0; i < srcMatrices.Length - 1; i++)
+            //{
+                //commands[i] = new OverlapSphereCommand(srcMatrices[i].Position(), 10f, QueryParameters.Default);
 
-            }
+            //}
 
-            OverlapSphereCommand.ScheduleBatch(commands, results, 1, 3).Complete();
+            //OverlapSphereCommand.ScheduleBatch(commands, results, 1, 3).Complete();
 
-            foreach (var hit in results)
-                Debug.Log(hit.collider.name);
+            //foreach (var hit in results)
+                //Debug.Log(hit.collider.name);
 
             commands.Dispose();
             results.Dispose();

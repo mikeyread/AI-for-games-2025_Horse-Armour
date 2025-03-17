@@ -86,7 +86,7 @@ namespace Flocking
     }
 
     [BurstCompile]
-    public struct BoidJob : IJob
+    public struct YLocked : IJob
     {
 
         public FlockingWeights Weights;
