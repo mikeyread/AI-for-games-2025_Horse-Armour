@@ -99,12 +99,21 @@ namespace Flocking
             // At the start of the frame, we ensure that all the jobs scheduled are completed.
             flockingHandle.Complete();
 
+            //Getting the nearset vertice (on x, z axis) and mapping the position to the Y value of it.
             foreach (var i in dstMatrices)
             {
                 Debug.DrawLine(i.Position(), new Vector3(i.Position().x, 10000, i.Position().z));
 
-                if (Physics.Linecast(i.Position(), new Vector3(i.Position().x, 10000, i.Position().z)))
+                if (Physics.Linecast(i.Position(), new Vector3(i.Position().x, -10000, i.Position().z), out RaycastHit hitinfo))
                 {
+                    MeshFilter mf = hitinfo.collider.gameObject.GetComponent<MeshFilter>();
+
+                    if (mf)
+                    {
+                        Mesh test = mf.mesh;
+                        //test.GetIndices();
+
+                    }
                     Debug.Log("HIT");
                 }
             }
