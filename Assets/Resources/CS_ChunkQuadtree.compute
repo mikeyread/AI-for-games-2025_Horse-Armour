@@ -79,7 +79,7 @@ float FractalSum(float2 pos, float2 offset, int octaves, float freq, float amp, 
     return sum;
 }
 
-
+// Currently creates a very mountainous enviroment with a flattened terrain around the player's spawn position.
 float CurrentNoise(float2 pos) {
     float CenterDistance = (pos.x * pos.x + pos.y * pos.y) / 333000000;
     float centerMod = PerlinCosineLerp(0, 1, clamp(CenterDistance, 0.11, 1));
@@ -100,6 +100,7 @@ void ComputeChunkMesh(uint3 id : SV_DispatchThreadID) {
         return;
     }
     
+    // Finds the true vertex Index using the id.
     uint vertexIndex = id.x + (id.y * meshSize);
     
     // Centers the chunk
@@ -107,11 +108,14 @@ void ComputeChunkMesh(uint3 id : SV_DispatchThreadID) {
     float zOffset = globalPosition.z - meshSize * quadScale / 2;
     float2 truePos = float2(xOffset + id.x * quadScale, zOffset + id.y * quadScale);
     
+    // Create noise offset
     float y = CurrentNoise(truePos) - 64;
     
+    // Apply Vertex and UV data.
     vertices[vertexIndex] = float3(truePos.x, y, truePos.y);
-    uvs[vertexIndex] = float2(truePos.x * quadScale / 2, truePos.y * quadScale / 2);
+    uvs[vertexIndex] = float2((float2)id.xy / meshSize);
     
+    // Apply indices data if the x and y are not exceeding the meshsize.
     if (id.x < meshSize - 1 && id.y < meshSize - 1)
     {
         uint triangleIndex = 6 * vertexIndex;
