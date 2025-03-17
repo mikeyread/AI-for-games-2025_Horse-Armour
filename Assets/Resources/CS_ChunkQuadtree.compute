@@ -2,11 +2,11 @@
 
 uniform float PI;
 uniform float4 globalPosition;
-uniform float2 globalOffset;
 
 StructuredBuffer<float> hash;
 
 RWStructuredBuffer<float3> vertices;
+RWStructuredBuffer<float2> uvs;
 RWStructuredBuffer<int> indices;
 
 uniform int meshSize;
@@ -108,10 +108,9 @@ void ComputeChunkMesh(uint3 id : SV_DispatchThreadID) {
     float2 truePos = float2(xOffset + id.x * quadScale, zOffset + id.y * quadScale);
     
     float y = CurrentNoise(truePos) - 64;
-
     
-    //vertices[vertexIndex] = float3(truePos.x, 0, truePos.y);
     vertices[vertexIndex] = float3(truePos.x, y, truePos.y);
+    uvs[vertexIndex] = float2(truePos.x * quadScale / 2, truePos.y * quadScale / 2);
     
     if (id.x < meshSize - 1 && id.y < meshSize - 1)
     {

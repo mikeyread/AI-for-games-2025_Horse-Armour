@@ -31,7 +31,7 @@ void ChunkPostVertex (uint3 id : SV_DispatchThreadID) {
     
     
     float3 col = float3(0, 0, 0);
-    if (vertices[normalIndex].y < -100)
+    if (vertices[normalIndex].y < -1000)
     {
         col = lerpFloat3(float3(0.3, 0.15, 0.05), float3(0.11, 0, 1), abs(vertices[normalIndex].y / 2000));
     }
