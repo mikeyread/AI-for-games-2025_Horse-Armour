@@ -48,6 +48,7 @@ public class QuadTreeChunk {
     public ComputeBuffer b_Vertices;
     public ComputeBuffer b_Normals;
     public ComputeBuffer b_Indices;
+    public ComputeBuffer b_UV;
     public ComputeBuffer b_Color;
 
     private float c_MeshScale;
@@ -56,6 +57,7 @@ public class QuadTreeChunk {
 
     private Texture2D m_Texture;
     private Vector3[] m_Vertices;
+    private Vector2[] m_UV;
     private Color[] m_Color;
     private int[] m_Indices;
 
@@ -63,10 +65,10 @@ public class QuadTreeChunk {
     {
         // Dispose of any buffers if they happen to have present allocations.
         b_HashTable?.Dispose();
-
         b_Vertices?.Dispose();
-        b_Normals?.Dispose();
         b_Indices?.Dispose();
+        b_UV?.Dispose();
+        b_Normals?.Dispose();
         b_Color?.Dispose();
 
         parentGrid = parent;
@@ -88,6 +90,7 @@ public class QuadTreeChunk {
         // Initialises Mesh Data.
         m_Vertices = new Vector3[m_IndexLimit];
         m_Color = new Color[m_IndexLimit];
+        m_UV = new Vector2[m_IndexLimit];
         m_Indices = new int[m_IndexLimit * 6];
 
         // Chunk Object Mesh component initialisation.
@@ -109,28 +112,36 @@ public class QuadTreeChunk {
         b_Vertices = new ComputeBuffer(m_IndexLimit, sizeof(float) * 3);
         b_Normals = new ComputeBuffer(m_IndexLimit, sizeof(float) * 3);
         b_Indices = new ComputeBuffer(m_IndexLimit, sizeof(int) * 6);
-        b_Color = new ComputeBuffer(m_IndexLimit, sizeof(float) * 4);
 
+        b_Color = new ComputeBuffer(m_IndexLimit, sizeof(float) * 4);
+        b_UV = new ComputeBuffer(m_IndexLimit, sizeof(float) * 2);
+
+        // Hash table
         b_HashTable = new ComputeBuffer(PerlinNoise2D.noiseQuality * PerlinNoise2D.noiseQuality, sizeof(float));
         b_HashTable.SetData(PerlinNoise2D._Noise2D);
         _ComputeShader.SetBuffer(0, "hash", b_HashTable);
 
+        // Compute Shader Constants
         _ComputeShader.SetInt("meshSize", c_MeshQuantity + 2);
         _ComputeShader.SetFloat("quadScale", c_MeshScale);
-
         _ComputeShader.SetFloat("PI", Mathf.PI);
         _ComputeShader.SetVector("globalPosition", parentGrid.g_Position);
 
+        // parsing in the Compute Shader Buffers.
         _ComputeShader.SetBuffer(0, "vertices", b_Vertices);
         _ComputeShader.SetBuffer(0, "indices", b_Indices);
+        _ComputeShader.SetBuffer(0, "uvs", b_UV);
 
         _ComputeShader.Dispatch(0, m_IndexLimit / 32, m_IndexLimit / 32, 1);
 
+        // Grab computed Buffer Data
         b_Vertices.GetData(m_Vertices);
         b_Indices.GetData(m_Indices);
+        b_UV.GetData(m_UV);
 
         chunkMesh.vertices = m_Vertices;
         chunkMesh.triangles = m_Indices;
+        chunkMesh.uv = m_UV;
 
         // Calculates Normals and assigns it to the buffer
         chunkMesh.RecalculateNormals();
@@ -164,6 +175,7 @@ public class QuadTreeChunk {
 
         b_HashTable?.Dispose();
         b_Vertices?.Dispose();
+        b_UV?.Dispose();
         b_Normals?.Dispose();
         b_Indices?.Dispose();
         b_Color?.Dispose();
@@ -171,5 +183,11 @@ public class QuadTreeChunk {
         chunkObject.GetComponent<MeshFilter>().sharedMesh = chunkMesh;
         chunkObject.GetComponent<MeshRenderer>().sharedMaterial.mainTexture = null;
         chunkObject.GetComponent<MeshRenderer>().sharedMaterial.mainTexture = m_Texture;
+
+        // Collider Test
+        chunkObject.AddComponent<BoxCollider>();
+        
+        //chunkObject.AddComponent<MeshCollider>();
+        //chunkObject.GetComponent<MeshCollider>().convex = true;
     }
 }
