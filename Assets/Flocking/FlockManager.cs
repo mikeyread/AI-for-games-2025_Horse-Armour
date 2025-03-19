@@ -100,21 +100,31 @@ namespace Flocking
             flockingHandle.Complete();
 
             //Getting the nearset vertice (on x, z axis) and mapping the position to the Y value of it.
-            foreach (var i in dstMatrices)
+            foreach (var boid in dstMatrices)
             {
-                Debug.DrawLine(i.Position(), new Vector3(i.Position().x, 10000, i.Position().z));
+                Debug.DrawLine(boid.Position(), new Vector3(boid.Position().x, 10000, boid.Position().z));
 
-                if (Physics.Linecast(i.Position(), new Vector3(i.Position().x, -10000, i.Position().z), out RaycastHit hitinfo))
+                if (Physics.Linecast(boid.Position(), new Vector3(boid.Position().x, -10000, boid.Position().z), out RaycastHit hitinfo))
                 {
                     MeshFilter mf = hitinfo.collider.gameObject.GetComponent<MeshFilter>();
 
+
                     if (mf)
                     {
-                        Mesh test = mf.mesh;
+                        Matrix4x4 localToWorld = transform.localToWorldMatrix;
+
+                        //Causing insane lag??
+                        for (int i = 0; i < mf.mesh.vertices.Length; i++)
+                        {
+                            Vector3 world_v = localToWorld.MultiplyPoint3x4(mf.mesh.vertices[i]);
+                            Debug.Log(world_v);
+                        }
+
+                        //Mesh test = mf.mesh;
                         //test.GetIndices();
 
                     }
-                    Debug.Log("HIT");
+                    //Debug.Log("HIT");
                 }
             }
 
@@ -146,7 +156,7 @@ namespace Flocking
                 flockingJob = new YLocked
                 {
                     Weights = Weights,
-                    Goal = new float3(Destination.position.x, 0, Destination.position.z),
+                    Goal = new float3(Destination.position.x, 1000, Destination.position.z),
                     NoiseOffsets = noiseOffsets,
                     Time = Time.time,
                     DeltaTime = Time.deltaTime,

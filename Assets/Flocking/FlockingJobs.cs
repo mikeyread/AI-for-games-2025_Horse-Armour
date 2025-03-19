@@ -112,7 +112,7 @@ namespace Flocking
             for (int m = 0; m < Size; m++)
             {
                 var current = Src[m];
-                var currentPos = new float3(current.Position().x, 0, current.Position().z);
+                var currentPos = new float3(current.Position().x, 1000, current.Position().z);
                 var perceivedSize = Size - 1;
 
                 var separation = float3.zero;
@@ -128,7 +128,7 @@ namespace Flocking
                     }
 
                     var b = Src[i];
-                    var other = new float3 (b.Position().x, 0, b.Position().z);
+                    var other = new float3 (b.Position().x, 1000, b.Position().z);
 
 
                     
