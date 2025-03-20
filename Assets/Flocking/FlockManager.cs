@@ -1,8 +1,10 @@
 using System.Drawing;
+using System.Linq;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.VisualScripting.Antlr3.Runtime;
 using UnityEngine;
 using UnityEngine.Jobs;
 using UnityEngine.UIElements;
@@ -27,6 +29,8 @@ namespace Flocking
         private TransformAccessArray transformAccessArray;
         private JobHandle flockingHandle;
         private float3* center;
+
+        private MeshFilter[] mfs;
 
         private void Start()
         {
@@ -99,6 +103,8 @@ namespace Flocking
             // At the start of the frame, we ensure that all the jobs scheduled are completed.
             flockingHandle.Complete();
 
+            
+
             //Getting the nearset vertice (on x, z axis) and mapping the position to the Y value of it.
             foreach (var boid in dstMatrices)
             {
@@ -106,24 +112,52 @@ namespace Flocking
 
                 if (Physics.Linecast(boid.Position(), new Vector3(boid.Position().x, -10000, boid.Position().z), out RaycastHit hitinfo))
                 {
-                    MeshFilter mf = hitinfo.collider.gameObject.GetComponent<MeshFilter>();
+                //bool newFilter = false;
+                //if (mfs.Length > 0)
+                //{
+                //    foreach (MeshFilter filter in mfs)
+                //    {
+                //        if (hitinfo.collider.gameObject.GetComponent<MeshFilter>() == filter)
+                //        {
+                //            newFilter = true;
+                //            break;
+                //        }
+                //    }
+
+                //    if (newFilter)
+                //    {
+                //        mfs[mfs.Length + 1] = hitinfo.collider.gameObject.GetComponent<MeshFilter>();
+                //    }
+                //}
 
 
-                    if (mf)
-                    {
-                        Matrix4x4 localToWorld = transform.localToWorldMatrix;
+                //https://discussions.unity.com/t/pinpointing-one-vertice-with-raycasthit/181509
 
-                        //Causing insane lag??
-                        for (int i = 0; i < mf.mesh.vertices.Length; i++)
-                        {
-                            Vector3 world_v = localToWorld.MultiplyPoint3x4(mf.mesh.vertices[i]);
-                            Debug.Log(world_v);
-                        }
+                    //if (mfs.Length > 0)
+                    //{
+                    //    foreach (MeshFilter filter1 in mfs)
+                    //    {
+                    //        Debug.Log(filter1.GetInstanceID());
+                    //    }
+                    //}
 
-                        //Mesh test = mf.mesh;
-                        //test.GetIndices();
+                    //mfs[1] = hitinfo.collider.gameObject.GetComponent<MeshFilter>();
 
-                    }
+                    //if (mfs[1])
+                    //{
+                    //    Matrix4x4 localToWorld = transform.localToWorldMatrix;
+
+                    //    //Causing insane lag??
+                    //    for (int i = 0; i < mfs[1].mesh.vertices.Length; i++)
+                    //    {
+                    //        Vector3 world_v = localToWorld.MultiplyPoint3x4(mfs[1].mesh.vertices[i]);
+                    //        Debug.Log(world_v);
+                    //    }
+
+                    //    Mesh test = mf.mesh;
+                    //    test.GetIndices();
+
+                    //}
                     //Debug.Log("HIT");
                 }
             }
