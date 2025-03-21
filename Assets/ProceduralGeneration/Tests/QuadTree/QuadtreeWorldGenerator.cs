@@ -42,134 +42,156 @@ public class QuadTreeChunk {
     public Mesh chunkMesh;
 
     public ComputeShader _ComputeShader;
-    public ComputeShader _NormalComputeShader;
+    public ComputeShader _PostProcessComputeShader;
 
     public ComputeBuffer b_HashTable;
     public ComputeBuffer b_Vertices;
-    public ComputeBuffer b_Indices;
     public ComputeBuffer b_Normals;
+    public ComputeBuffer b_Indices;
+    public ComputeBuffer b_UV;
+    public ComputeBuffer b_Color;
 
     private float c_MeshScale;
     private int c_MeshQuantity = WorldOptions.CHUNK_QUAD_AMOUNT;
     private int m_IndexLimit;
 
+    private Texture2D m_Texture;
     private Vector3[] m_Vertices;
-    private Vector3[] m_Normals;
+    private Vector2[] m_UV;
+    private Color[] m_Color;
     private int[] m_Indices;
 
     public QuadTreeChunk(Quad parent)
     {
+        // Dispose of any buffers if they happen to have present allocations.
         b_HashTable?.Dispose();
         b_Vertices?.Dispose();
-        b_Normals?.Dispose();
         b_Indices?.Dispose();
+        b_UV?.Dispose();
+        b_Normals?.Dispose();
+        b_Color?.Dispose();
 
         parentGrid = parent;
 
-        m_IndexLimit = (c_MeshQuantity + 1) * (c_MeshQuantity + 1);
+        m_IndexLimit = (c_MeshQuantity + 2) * (c_MeshQuantity + 2);
 
+        // Scalars for the Chunk LOD and Mesh Scale
         float ParentScale = parentGrid.TRCorner_Position().x - parentGrid.BLCorner_Position().x;
         c_MeshScale = WorldOptions.CHUNK_QUAD_SCALAR * (ParentScale / ((WorldOptions.CHUNK_QUAD_AMOUNT - 1) * WorldOptions.CHUNK_QUAD_SCALAR));
 
+        // The chunk object initilisation
         chunkObject = new("Chunk");
         chunkMesh = new();
+        chunkMesh.name = "Chunk_Mesh";
 
+        // Compute Shader Initialisation
         _ComputeShader = Object.Instantiate(Resources.Load<ComputeShader>("CS_ChunkQuadtree"));
-        _NormalComputeShader = Object.Instantiate(Resources.Load<ComputeShader>("CS_ChunkPostVertex"));
+        _PostProcessComputeShader = Object.Instantiate(Resources.Load<ComputeShader>("CS_ChunkPostVertex"));
         
+        // Initialises Mesh relevant Data
         m_Vertices = new Vector3[m_IndexLimit];
-        m_Normals = new Vector3[m_IndexLimit];
+        m_Color = new Color[m_IndexLimit];
+        m_UV = new Vector2[m_IndexLimit];
         m_Indices = new int[m_IndexLimit * 6];
 
+        // Attaches Components necessary for Mesh construction.
         if (chunkObject.GetComponent<MeshFilter>() == null) chunkObject.AddComponent<MeshFilter>();
+
         if (chunkObject.GetComponent<MeshRenderer>() == null) {
             chunkObject.AddComponent<MeshRenderer>();
             chunkObject.GetComponent<MeshRenderer>().sharedMaterial = new Material(Shader.Find("Universal Render Pipeline/Simple Lit"));
         }
+
+        m_Texture = new(c_MeshQuantity + 2, c_MeshQuantity + 2);
 
         GenerateMesh();
     }
 
     private void GenerateMesh()
     {
+        // Create all the Buffers
         b_Vertices = new ComputeBuffer(m_IndexLimit, sizeof(float) * 3);
+        b_Normals = new ComputeBuffer(m_IndexLimit, sizeof(float) * 3);
         b_Indices = new ComputeBuffer(m_IndexLimit, sizeof(int) * 6);
 
+        b_Color = new ComputeBuffer(m_IndexLimit, sizeof(float) * 4);
+        b_UV = new ComputeBuffer(m_IndexLimit, sizeof(float) * 2);
+
+        // Hash table
         b_HashTable = new ComputeBuffer(PerlinNoise2D.noiseQuality * PerlinNoise2D.noiseQuality, sizeof(float));
         b_HashTable.SetData(PerlinNoise2D._Noise2D);
         _ComputeShader.SetBuffer(0, "hash", b_HashTable);
 
-        _ComputeShader.SetInt("meshSize", c_MeshQuantity + 1);
+        // Compute Shader Constants
+        _ComputeShader.SetInt("meshSize", c_MeshQuantity + 2);
         _ComputeShader.SetFloat("quadScale", c_MeshScale);
-
         _ComputeShader.SetFloat("PI", Mathf.PI);
         _ComputeShader.SetVector("globalPosition", parentGrid.g_Position);
 
+        // parsing in the Compute Shader Buffers.
         _ComputeShader.SetBuffer(0, "vertices", b_Vertices);
         _ComputeShader.SetBuffer(0, "indices", b_Indices);
+        _ComputeShader.SetBuffer(0, "uvs", b_UV);
 
         _ComputeShader.Dispatch(0, m_IndexLimit / 32, m_IndexLimit / 32, 1);
 
+        // Grab computed Buffer Data
         b_Vertices.GetData(m_Vertices);
         b_Indices.GetData(m_Indices);
+        b_UV.GetData(m_UV);
 
+
+        // Calculates Normals and assigns it to the buffer
         chunkMesh.vertices = m_Vertices;
         chunkMesh.triangles = m_Indices;
+        chunkMesh.RecalculateNormals();
 
+        // Creates Vertex Skirts and Colour data using the vertex height offset, with an otherwise similar setup to the above Compute Shader.
+        _PostProcessComputeShader.SetBuffer(0, "vertices", b_Vertices);
+        _PostProcessComputeShader.SetBuffer(0, "normals", b_Normals);
+        _PostProcessComputeShader.SetBuffer(0, "color", b_Color);
 
-        // Compute the Normals
-        b_Normals = new ComputeBuffer(m_IndexLimit, sizeof(float) * 3);
+        _PostProcessComputeShader.SetInt("meshSize", c_MeshQuantity + 2);
+        _PostProcessComputeShader.SetFloat("quadScale", c_MeshScale);
 
-        _NormalComputeShader.SetBuffer(0, "vertices", b_Vertices);
-        _NormalComputeShader.SetBuffer(0, "normals", b_Normals);
-
-        _NormalComputeShader.SetInt("meshSize", c_MeshQuantity + 1);
-        _NormalComputeShader.SetFloat("quadScale", c_MeshScale);
-
-        _NormalComputeShader.Dispatch(0, m_IndexLimit / 32, m_IndexLimit / 32, 1);
+        _PostProcessComputeShader.Dispatch(0, m_IndexLimit / 32, m_IndexLimit / 32, 1);
 
         b_Vertices.GetData(m_Vertices);
-        b_Normals.GetData(m_Normals);
+        b_Color.GetData(m_Color);
 
+        // Create a texture using the aquired Colour data.
+        for (int y = 0; y < c_MeshQuantity + 2; y++)
+        {
+            for (int x = 0; x < c_MeshQuantity + 2; x++)
+            {
+                m_Texture.SetPixel(x, y, m_Color[x + y * (c_MeshQuantity + 2)]);
+            }
+        }
+
+        // Finalisation of mesh data
         chunkMesh.vertices = m_Vertices;
-        chunkMesh.normals = m_Normals;
-        //chunkMesh.vertices = m_Vertices;
+        chunkMesh.triangles = m_Indices;
+        chunkMesh.uv = m_UV;
+        chunkMesh.colors = m_Color;
 
+        m_Texture.Apply();
 
+        // Dispose of all the Buffers to prevent Memory Leaks.
         b_HashTable?.Dispose();
         b_Vertices?.Dispose();
         b_Indices?.Dispose();
+        b_UV?.Dispose();
         b_Normals?.Dispose();
+        b_Color?.Dispose();
 
         chunkObject.GetComponent<MeshFilter>().sharedMesh = chunkMesh;
-    }
+        chunkObject.GetComponent<MeshRenderer>().sharedMaterial.mainTexture = null;
+        chunkObject.GetComponent<MeshRenderer>().sharedMaterial.mainTexture = m_Texture;
 
-
-    // Generates a One by One Quadmesh to scale of its parent Quadtree Node
-    public void GenerateDebugQuadMesh()
-    {
-        m_Vertices = new Vector3[4];
-        m_Indices = new int[6];
-
-        Vector3 relativePosition = parentGrid.g_Position;
-
-        m_Vertices[0] = relativePosition + new Vector3(-parentGrid.n_Bounds.x / 2, 0, -parentGrid.n_Bounds.z / 2);
-        m_Vertices[1] = relativePosition + new Vector3(parentGrid.n_Bounds.x / 2, 0, -parentGrid.n_Bounds.z / 2);
-        m_Vertices[2] = relativePosition + new Vector3(-parentGrid.n_Bounds.x / 2, 0, parentGrid.n_Bounds.z / 2);
-        m_Vertices[3] = relativePosition + new Vector3(parentGrid.n_Bounds.x / 2, 0, parentGrid.n_Bounds.z / 2);
-
-        m_Indices[0] = 1;
-        m_Indices[1] = 0;
-        m_Indices[2] = 2;
-
-        m_Indices[3] = 2;
-        m_Indices[4] = 3;
-        m_Indices[5] = 1;
-
-        chunkMesh.vertices = m_Vertices;
-        chunkMesh.triangles = m_Indices;
-
-        if (chunkObject.GetComponent<MeshFilter>() == null) chunkObject.AddComponent<MeshFilter>().sharedMesh = chunkMesh;
-        if (chunkObject.GetComponent<MeshRenderer>() == null) chunkObject.AddComponent<MeshRenderer>().sharedMaterial = new(Shader.Find("Universal Render Pipeline/Simple Lit"));
+        // Collider Attatchment
+        chunkObject.AddComponent<BoxCollider>();
+        
+        //chunkObject.AddComponent<MeshCollider>();
+        //chunkObject.GetComponent<MeshCollider>().convex = true;
     }
 }
