@@ -82,24 +82,24 @@ public class QuadTreeChunk {
         // The chunk object initilisation
         chunkObject = new("Chunk");
         chunkMesh = new();
+        chunkMesh.name = "Chunk_Mesh";
 
         // Compute Shader Initialisation
         _ComputeShader = Object.Instantiate(Resources.Load<ComputeShader>("CS_ChunkQuadtree"));
         _PostProcessComputeShader = Object.Instantiate(Resources.Load<ComputeShader>("CS_ChunkPostVertex"));
         
-        // Initialises Mesh Data.
+        // Initialises Mesh relevant Data
         m_Vertices = new Vector3[m_IndexLimit];
         m_Color = new Color[m_IndexLimit];
         m_UV = new Vector2[m_IndexLimit];
         m_Indices = new int[m_IndexLimit * 6];
 
-        // Chunk Object Mesh component initialisation.
+        // Attaches Components necessary for Mesh construction.
         if (chunkObject.GetComponent<MeshFilter>() == null) chunkObject.AddComponent<MeshFilter>();
 
         if (chunkObject.GetComponent<MeshRenderer>() == null) {
             chunkObject.AddComponent<MeshRenderer>();
             chunkObject.GetComponent<MeshRenderer>().sharedMaterial = new Material(Shader.Find("Universal Render Pipeline/Simple Lit"));
-            //chunkObject.GetComponent<MeshRenderer>().sharedMaterial = new(Shader.Find("Particles/Standard Unlit"));
         }
 
         m_Texture = new(c_MeshQuantity + 2, c_MeshQuantity + 2);
@@ -109,6 +109,7 @@ public class QuadTreeChunk {
 
     private void GenerateMesh()
     {
+        // Create all the Buffers
         b_Vertices = new ComputeBuffer(m_IndexLimit, sizeof(float) * 3);
         b_Normals = new ComputeBuffer(m_IndexLimit, sizeof(float) * 3);
         b_Indices = new ComputeBuffer(m_IndexLimit, sizeof(int) * 6);
@@ -139,15 +140,13 @@ public class QuadTreeChunk {
         b_Indices.GetData(m_Indices);
         b_UV.GetData(m_UV);
 
-        chunkMesh.vertices = m_Vertices;
-        chunkMesh.triangles = m_Indices;
-        chunkMesh.uv = m_UV;
 
         // Calculates Normals and assigns it to the buffer
+        chunkMesh.vertices = m_Vertices;
+        chunkMesh.triangles = m_Indices;
         chunkMesh.RecalculateNormals();
-        b_Normals.GetData(chunkMesh.normals);
 
-        // Create the Skirts and apply Colour to the mesh via 
+        // Creates Vertex Skirts and Colour data using the vertex height offset, with an otherwise similar setup to the above Compute Shader.
         _PostProcessComputeShader.SetBuffer(0, "vertices", b_Vertices);
         _PostProcessComputeShader.SetBuffer(0, "normals", b_Normals);
         _PostProcessComputeShader.SetBuffer(0, "color", b_Color);
@@ -160,6 +159,7 @@ public class QuadTreeChunk {
         b_Vertices.GetData(m_Vertices);
         b_Color.GetData(m_Color);
 
+        // Create a texture using the aquired Colour data.
         for (int y = 0; y < c_MeshQuantity + 2; y++)
         {
             for (int x = 0; x < c_MeshQuantity + 2; x++)
@@ -168,23 +168,27 @@ public class QuadTreeChunk {
             }
         }
 
+        // Finalisation of mesh data
         chunkMesh.vertices = m_Vertices;
+        chunkMesh.triangles = m_Indices;
+        chunkMesh.uv = m_UV;
         chunkMesh.colors = m_Color;
 
         m_Texture.Apply();
 
+        // Dispose of all the Buffers to prevent Memory Leaks.
         b_HashTable?.Dispose();
         b_Vertices?.Dispose();
+        b_Indices?.Dispose();
         b_UV?.Dispose();
         b_Normals?.Dispose();
-        b_Indices?.Dispose();
         b_Color?.Dispose();
 
         chunkObject.GetComponent<MeshFilter>().sharedMesh = chunkMesh;
         chunkObject.GetComponent<MeshRenderer>().sharedMaterial.mainTexture = null;
         chunkObject.GetComponent<MeshRenderer>().sharedMaterial.mainTexture = m_Texture;
 
-        // Collider Test
+        // Collider Attatchment
         chunkObject.AddComponent<BoxCollider>();
         
         //chunkObject.AddComponent<MeshCollider>();

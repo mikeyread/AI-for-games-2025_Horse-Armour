@@ -5,7 +5,7 @@ using UnityEngine;
 // Global Parameters for the quad tree
 static class QuadTreeParameters
 {
-    public static int maxDepth = 8;
+    public static int maxDepth = 13;
     public static float GridSphereCheck = 2.5f;
 }
 
