@@ -117,7 +117,7 @@ public class QuadTreeChunk {
         b_Color = new ComputeBuffer(m_IndexLimit, sizeof(float) * 4);
         b_UV = new ComputeBuffer(m_IndexLimit, sizeof(float) * 2);
 
-        // Hash table
+        // Links the noise Hash Table to the buffer.
         b_HashTable = new ComputeBuffer(PerlinNoise2D.noiseQuality * PerlinNoise2D.noiseQuality, sizeof(float));
         b_HashTable.SetData(PerlinNoise2D._Noise2D);
         _ComputeShader.SetBuffer(0, "hash", b_HashTable);
@@ -140,11 +140,12 @@ public class QuadTreeChunk {
         b_Indices.GetData(m_Indices);
         b_UV.GetData(m_UV);
 
-
         // Calculates Normals and assigns it to the buffer
         chunkMesh.vertices = m_Vertices;
         chunkMesh.triangles = m_Indices;
+
         chunkMesh.RecalculateNormals();
+        b_Normals.SetData(chunkMesh.normals);
 
         // Creates Vertex Skirts and Colour data using the vertex height offset, with an otherwise similar setup to the above Compute Shader.
         _PostProcessComputeShader.SetBuffer(0, "vertices", b_Vertices);
