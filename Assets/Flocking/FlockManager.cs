@@ -4,6 +4,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.VisualScripting;
 using Unity.VisualScripting.Antlr3.Runtime;
 using UnityEngine;
 using UnityEngine.Jobs;
@@ -25,6 +26,10 @@ namespace Flocking
         private NativeArray<float4x4> srcMatrices;
         //Outpud data
         private NativeArray<float4x4> dstMatrices;
+
+        private NativeArray<float> Ylevels;
+        //private float[] Ylevels;
+
         private Transform[] transforms;
         private TransformAccessArray transformAccessArray;
         private JobHandle flockingHandle;
@@ -35,7 +40,7 @@ namespace Flocking
         private void Start()
         {
             // We spawn n GameObjects that we will manipulate. We store the positions and their associated noise offsets.
-            // The nosie offsts are useful for providing a unique sense of movement per element.
+            // The noise offsts create random movement per boid.
             transforms = new Transform[flockSize];
             srcMatrices = new NativeArray<float4x4>(transforms.Length, Allocator.Persistent);
             dstMatrices = new NativeArray<float4x4>(transforms.Length, Allocator.Persistent);
@@ -103,67 +108,82 @@ namespace Flocking
             // At the start of the frame, we ensure that all the jobs scheduled are completed.
             flockingHandle.Complete();
 
-            
+
 
             //Getting the nearset vertice (on x, z axis) and mapping the position to the Y value of it.
-            foreach (var boid in dstMatrices)
+
+            for (int i = 0; i < dstMatrices.Length; i++)
             {
-                Debug.DrawLine(boid.Position(), new Vector3(boid.Position().x, 10000, boid.Position().z));
+                Debug.DrawLine(dstMatrices[i].Position(), new Vector3(dstMatrices[i].Position().x, -10000, dstMatrices[i].Position().z));
 
-                if (Physics.Linecast(boid.Position(), new Vector3(boid.Position().x, -10000, boid.Position().z), out RaycastHit hitinfo))
+                if (Physics.Linecast(dstMatrices[i].Position(), new Vector3(dstMatrices[i].Position().x, -10000, dstMatrices[i].Position().z), out RaycastHit hitinfo))
                 {
-                //bool newFilter = false;
-                //if (mfs.Length > 0)
-                //{
-                //    foreach (MeshFilter filter in mfs)
-                //    {
-                //        if (hitinfo.collider.gameObject.GetComponent<MeshFilter>() == filter)
-                //        {
-                //            newFilter = true;
-                //            break;
-                //        }
-                //    }
+                    MeshCollider meshCollider = hitinfo.collider as MeshCollider;
 
-                //    if (newFilter)
-                //    {
-                //        mfs[mfs.Length + 1] = hitinfo.collider.gameObject.GetComponent<MeshFilter>();
-                //    }
-                //}
+                    if (meshCollider == null || meshCollider.sharedMesh == null)
+                        return;
 
+                    Mesh mesh = meshCollider.sharedMesh;
+                    //Vector3[] vertices = mesh.vertices;
+                    int[] triangles = mesh.triangles;
+                    Vector3 closestVertex = mesh.vertices[GetClosestVertex(hitinfo, triangles)];
 
-                //https://discussions.unity.com/t/pinpointing-one-vertice-with-raycasthit/181509
+                    //Some error here. I dunno. Good luck.
+                    Ylevels[i] = closestVertex.y;
 
-                    //if (mfs.Length > 0)
-                    //{
-                    //    foreach (MeshFilter filter1 in mfs)
-                    //    {
-                    //        Debug.Log(filter1.GetInstanceID());
-                    //    }
-                    //}
-
-                    //mfs[1] = hitinfo.collider.gameObject.GetComponent<MeshFilter>();
-
-                    //if (mfs[1])
-                    //{
-                    //    Matrix4x4 localToWorld = transform.localToWorldMatrix;
-
-                    //    //Causing insane lag??
-                    //    for (int i = 0; i < mfs[1].mesh.vertices.Length; i++)
-                    //    {
-                    //        Vector3 world_v = localToWorld.MultiplyPoint3x4(mfs[1].mesh.vertices[i]);
-                    //        Debug.Log(world_v);
-                    //    }
-
-                    //    Mesh test = mf.mesh;
-                    //    test.GetIndices();
-
-                    //}
-                    //Debug.Log("HIT");
+                    Debug.Log(closestVertex);
                 }
-            }
 
-            // Write the contents from the pointer back to our position.
-            transform.position = *center;
+
+                //foreach (var boid in dstMatrices)
+                //{
+
+
+                //    Debug.DrawLine(boid.Position(), new Vector3(boid.Position().x, -10000, boid.Position().z));
+
+                //    if (Physics.Linecast(boid.Position(), new Vector3(boid.Position().x, -10000, boid.Position().z), out RaycastHit hitinfo))
+                //    {
+                //        MeshCollider meshCollider = hitinfo.collider as MeshCollider;
+
+                //        if (meshCollider == null || meshCollider.sharedMesh == null)
+                //            return;
+
+                //        Mesh mesh = meshCollider.sharedMesh;
+                //        //Vector3[] vertices = mesh.vertices;
+                //        int[] triangles = mesh.triangles;
+                //        Vector3 closestVertex = mesh.vertices[GetClosestVertex(hitinfo, triangles)];
+
+                //        Debug.Log(closestVertex);
+
+                //        //boid.c3.xyz = closestVertex;
+
+                //        GetClosestVertex(hitinfo, triangles);
+
+
+                //        //bool newFilter = false;
+                //        //if (mfs.Length > 0)
+                //        //{
+                //        //    foreach (MeshFilter filter in mfs)
+                //        //    {
+                //        //        if (hitinfo.collider.gameObject.GetComponent<MeshFilter>() == filter)
+                //        //        {
+                //        //            newFilter = true;
+                //        //            break;
+                //        //        }
+                //        //    }
+
+                //        //    if (newFilter)
+                //        //    {
+                //        //        mfs[mfs.Length + 1] = hitinfo.collider.gameObject.GetComponent<MeshFilter>();
+                //        //    }
+                }
+
+
+
+                //        //https://discussions.unity.com/t/pinpointing-one-vertice-with-raycasthit/181509
+
+                // Write the contents from the pointer back to our position.
+                transform.position = *center;
 
             // Copy the contents from the NativeArray to our TransformAccess
             var copyTransformJob = new CopyTransformJob
@@ -182,7 +202,6 @@ namespace Flocking
 
             //UpdateDestination(Destination.position);
 
-            //BatchOverlapSphere();
 
             if (LockYPosition)
             {
@@ -199,7 +218,8 @@ namespace Flocking
                     RotationSpeed = RotationSpeed,
                     Size = srcMatrices.Length,
                     Src = srcMatrices,
-                    Dst = dstMatrices
+                    Dst = dstMatrices,
+                    YInputs = Ylevels
                 }.Schedule();
             }
             else
@@ -242,37 +262,31 @@ namespace Flocking
 
         }
 
-
-        void BatchOverlapSphere()
-        {
-            var commands = new NativeArray<OverlapSphereCommand>(1, Allocator.TempJob);
-            var results = new NativeArray<ColliderHit>(3, Allocator.TempJob);
-
-
-            //for (int i  = 0; i < srcMatrices.Length - 1; i++)
-            //{
-                //commands[i] = new OverlapSphereCommand(srcMatrices[i].Position(), 10f, QueryParameters.Default);
-
-            //}
-
-            //OverlapSphereCommand.ScheduleBatch(commands, results, 1, 3).Complete();
-
-            //foreach (var hit in results)
-                //Debug.Log(hit.collider.name);
-
-            commands.Dispose();
-            results.Dispose();
-        }
-
         public unsafe void UpdateDestination(Vector3 newDest)
         {
             Destination.position = newDest;
         }
+
+
+        //Finding nearest vertex to Raycast Hit
+        public static int GetClosestVertex(RaycastHit hitInfo, int[] triangles)
+        {
+            var b = hitInfo.barycentricCoordinate;
+            int index = hitInfo.triangleIndex * 3;
+            if (triangles == null || index < 0 || index + 2 >= triangles.Length)
+                return -1;
+
+            if (b.x > b.y)
+            {
+                if (b.x > b.z)
+                    return triangles[index]; // x
+                else
+                    return triangles[index + 2]; // z
+            }
+            else if (b.y > b.z)
+                return triangles[index + 1]; // y
+            else
+                return triangles[index + 2]; // z
+        }
     }
-
-
-
-
-
-
 }
