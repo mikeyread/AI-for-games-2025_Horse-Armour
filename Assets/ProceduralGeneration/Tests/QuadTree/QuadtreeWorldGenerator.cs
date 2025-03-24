@@ -7,6 +7,7 @@ public class QuadtreeWorldGenerator : MonoBehaviour
     private QuadTree q_tree;
     private bool debugGrid = false;
 
+
     private void Awake()
     {
         // Quad Tree is generated from the bottom up by specifying the unit scale of the highest detail chunk.
@@ -16,7 +17,6 @@ public class QuadtreeWorldGenerator : MonoBehaviour
     private void Update()
     {
         q_tree.UpdateGrid(transform.position);
-        //Debug.Log("Active quantity of grids: " + q_tree.GetActive().Count);
     }
 
 
@@ -61,6 +61,7 @@ public class QuadTreeChunk {
     private Color[] m_Color;
     private int[] m_Indices;
 
+
     public QuadTreeChunk(Quad parent)
     {
         // Dispose of any buffers if they happen to have present allocations.
@@ -83,6 +84,7 @@ public class QuadTreeChunk {
         chunkObject = new("Chunk");
         chunkMesh = new();
         chunkMesh.name = "Chunk_Mesh";
+        chunkObject.tag = "WorldChunk";
 
         // Compute Shader Initialisation
         _ComputeShader = Object.Instantiate(Resources.Load<ComputeShader>("CS_ChunkQuadtree"));
@@ -93,6 +95,7 @@ public class QuadTreeChunk {
         m_Color = new Color[m_IndexLimit];
         m_UV = new Vector2[m_IndexLimit];
         m_Indices = new int[m_IndexLimit * 6];
+
 
         // Attaches Components necessary for Mesh construction.
         if (chunkObject.GetComponent<MeshFilter>() == null) chunkObject.AddComponent<MeshFilter>();
@@ -165,7 +168,14 @@ public class QuadTreeChunk {
         {
             for (int x = 0; x < c_MeshQuantity + 2; x++)
             {
-                m_Texture.SetPixel(x, y, m_Color[x + y * (c_MeshQuantity + 2)]);
+                if (y <= 1)
+                {
+                    m_Texture.SetPixel(x, y, m_Color[x + y * c_MeshQuantity]);
+                } else
+                {
+                    m_Texture.SetPixel(x, y, m_Color[x + y * (c_MeshQuantity + 2)]);
+                }
+                //m_Texture.SetPixel(x, y, m_Color[x + y * (c_MeshQuantity + 2)]);
             }
         }
 

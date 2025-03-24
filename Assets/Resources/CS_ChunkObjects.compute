@@ -1,0 +1,29 @@
+#pragma kernel ChunkPostVertex
+
+
+RWStructuredBuffer<float3> positions;
+
+uniform uint size;
+uniform float3 playerPos;
+
+
+float sqrMagnitude(float3 val)
+{
+    return val.x * val.x + val.y * val.y + val.z * val.z;
+}
+
+
+[numthreads(32,32,1)]
+void ChunkPostVertex (uint3 id : SV_DispatchThreadID) {
+    if (id.x >= size)
+        return;
+    
+    uint index = id.x + id.y * size;
+    
+    float3 grassPos = float3((float)id.x, 0, (float)id.y);
+    
+    if (sqrMagnitude(playerPos - grassPos) >= 100) return;
+    
+    
+    positions[index] = playerPos + grassPos - size / 2;
+}
