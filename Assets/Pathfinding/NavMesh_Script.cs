@@ -87,7 +87,7 @@ public class NavMesh_Script : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
+        SpawnNodesSpiral(10);
 
     }
     private void SpawnNodesSpiral(int total)
