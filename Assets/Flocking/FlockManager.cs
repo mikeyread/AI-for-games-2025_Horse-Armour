@@ -24,9 +24,10 @@ namespace Flocking
         private NativeArray<float> noiseOffsets;
         //Input data
         private NativeArray<float4x4> srcMatrices;
-        //Outpud data
+        //Output data
         private NativeArray<float4x4> dstMatrices;
 
+        private float[] floatArray;
         private NativeArray<float> Ylevels;
         //private float[] Ylevels;
 
@@ -116,71 +117,36 @@ namespace Flocking
             {
                 Debug.DrawLine(dstMatrices[i].Position(), new Vector3(dstMatrices[i].Position().x, -10000, dstMatrices[i].Position().z));
 
+                //Debug.Log("Linecast used");
+
                 if (Physics.Linecast(dstMatrices[i].Position(), new Vector3(dstMatrices[i].Position().x, -10000, dstMatrices[i].Position().z), out RaycastHit hitinfo))
                 {
                     MeshCollider meshCollider = hitinfo.collider as MeshCollider;
 
                     if (meshCollider == null || meshCollider.sharedMesh == null)
+                    {
+                        Debug.Log("Null mesh");
                         return;
+                    }
+                        
 
                     Mesh mesh = meshCollider.sharedMesh;
                     //Vector3[] vertices = mesh.vertices;
                     int[] triangles = mesh.triangles;
                     Vector3 closestVertex = mesh.vertices[GetClosestVertex(hitinfo, triangles)];
 
+                    Debug.Log("Closest Vertex = " +  closestVertex);
+
                     //Some error here. I dunno. Good luck.
-                    Ylevels[i] = closestVertex.y;
-
-                    Debug.Log(closestVertex);
+                    floatArray[i] = closestVertex.y;
+                    Debug.Log("Should be logs here");
+                    Debug.Log(floatArray[i]);
                 }
-
-
-                //foreach (var boid in dstMatrices)
-                //{
-
-
-                //    Debug.DrawLine(boid.Position(), new Vector3(boid.Position().x, -10000, boid.Position().z));
-
-                //    if (Physics.Linecast(boid.Position(), new Vector3(boid.Position().x, -10000, boid.Position().z), out RaycastHit hitinfo))
-                //    {
-                //        MeshCollider meshCollider = hitinfo.collider as MeshCollider;
-
-                //        if (meshCollider == null || meshCollider.sharedMesh == null)
-                //            return;
-
-                //        Mesh mesh = meshCollider.sharedMesh;
-                //        //Vector3[] vertices = mesh.vertices;
-                //        int[] triangles = mesh.triangles;
-                //        Vector3 closestVertex = mesh.vertices[GetClosestVertex(hitinfo, triangles)];
-
-                //        Debug.Log(closestVertex);
-
-                //        //boid.c3.xyz = closestVertex;
-
-                //        GetClosestVertex(hitinfo, triangles);
-
-
-                //        //bool newFilter = false;
-                //        //if (mfs.Length > 0)
-                //        //{
-                //        //    foreach (MeshFilter filter in mfs)
-                //        //    {
-                //        //        if (hitinfo.collider.gameObject.GetComponent<MeshFilter>() == filter)
-                //        //        {
-                //        //            newFilter = true;
-                //        //            break;
-                //        //        }
-                //        //    }
-
-                //        //    if (newFilter)
-                //        //    {
-                //        //        mfs[mfs.Length + 1] = hitinfo.collider.gameObject.GetComponent<MeshFilter>();
-                //        //    }
-                }
+            }
 
 
 
-                //        //https://discussions.unity.com/t/pinpointing-one-vertice-with-raycasthit/181509
+                        //https://discussions.unity.com/t/pinpointing-one-vertice-with-raycasthit/181509
 
                 // Write the contents from the pointer back to our position.
                 transform.position = *center;
@@ -202,7 +168,7 @@ namespace Flocking
 
             //UpdateDestination(Destination.position);
 
-
+            //NativeArray<float> nativeArray = new NativeArray<float>(floatArray, allocator.temp);
             if (LockYPosition)
             {
                 //Figure out grabbing the Y position to lock to surface
@@ -218,8 +184,8 @@ namespace Flocking
                     RotationSpeed = RotationSpeed,
                     Size = srcMatrices.Length,
                     Src = srcMatrices,
-                    Dst = dstMatrices,
-                    YInputs = Ylevels
+                    Dst = dstMatrices
+                    //YInputs = Ylevels
                 }.Schedule();
             }
             else

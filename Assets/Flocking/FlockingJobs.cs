@@ -101,8 +101,8 @@ namespace Flocking
         [ReadOnly]
         public NativeArray<float> NoiseOffsets;
 
-        [ReadOnly]
-        public NativeArray<float> YInputs;
+        //[ReadOnly]
+        //public NativeArray<float> YInputs;
 
         [ReadOnly]
         public NativeArray<float4x4> Src;
@@ -146,6 +146,7 @@ namespace Flocking
                     cohesion += other;
 
                     //YInputs[i] = 2;
+                    //Debug.Log(YInputs[i]);
                 }
 
                 var avg = 1f / perceivedSize;
@@ -170,7 +171,7 @@ namespace Flocking
                 var speedNoise = Speed * (1f + pNoise * Weights.NoiseWeight * 0.9f);
                 var finalPosition = currentPos + current.Forward() * speedNoise * DeltaTime;
 
-                finalPosition.y = YInputs[m];
+                //finalPosition.y = YInputs[m];
 
                 Dst[m] = float4x4.TRS(finalPosition, finalRotation, new float3(1));
             }

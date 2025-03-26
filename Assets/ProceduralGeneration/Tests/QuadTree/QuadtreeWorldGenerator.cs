@@ -189,9 +189,9 @@ public class QuadTreeChunk {
         chunkObject.GetComponent<MeshRenderer>().sharedMaterial.mainTexture = m_Texture;
 
         // Collider Attatchment
-        chunkObject.AddComponent<BoxCollider>();
+        //chunkObject.AddComponent<BoxCollider>();
         
-        //chunkObject.AddComponent<MeshCollider>();
+        chunkObject.AddComponent<MeshCollider>();
         //chunkObject.GetComponent<MeshCollider>().convex = true;
     }
 }
