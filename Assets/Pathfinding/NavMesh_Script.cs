@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,11 +17,21 @@ public class NavMesh_Script : MonoBehaviour
 
     public int Direction { get; set; }
 
+    public int MaxTravelHight { get; set; }
+
     void Start()
     {
+        MaxTravelHight = 10;
+
         nodes.Add(new NavMeshNode(transform.position));
+        //nodes.Sort();
+        //nodes = nodes.OrderBy(NavMeshNode => NavMeshNode.Pos).ToList();
         TLCorner = nodes.LastOrDefault().Pos;
         BRCorner = nodes.LastOrDefault().Pos;
+
+        SpawnNodesSqure(transform.position, 25);
+
+
         //TLCorner = transform.position;
         //BRCorner = transform.position;
         Direction = 0;
@@ -75,9 +86,10 @@ public class NavMesh_Script : MonoBehaviour
 
 
 
+
     }
 
-    private bool AddNode(int x, int y, int z)
+    private bool AddNodeFromLastNoded(int x, int y, int z)
     {
         nodes.Add(new NavMeshNode((nodes.LastOrDefault().Pos) + new Vector3(x, y, z)));
         return true;
@@ -87,8 +99,22 @@ public class NavMesh_Script : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        SpawnNodesSpiral(10);
+        //SpawnNodesSpiral(10);
+        //nodes
+        //nodes.Sort();
+        //nodes = nodes.OrderBy(NavMeshNode => NavMeshNode.Pos.magnitude).ToList();
+    }
+    private void SpawnNodesSqure(Vector3 StartingTLVector,int edgeLength)
+    {
+        for (float z = StartingTLVector.z; z > (StartingTLVector.z - edgeLength); z--) 
+        {
+            for (float x = StartingTLVector.x; x < (StartingTLVector.x + edgeLength); x++)
+            {
+                nodes.Add(new NavMeshNode(new Vector3(x, 0, z)));
+                nodes.LastOrDefault().ConnectNode(nodes);
+            }
 
+        }
     }
     private void SpawnNodesSpiral(int total)
     {
@@ -120,22 +146,22 @@ public class NavMesh_Script : MonoBehaviour
             {
                 case 0: // right
                     {
-                        AddNode(1, 0, 0);
+                        AddNodeFromLastNoded(1, 0, 0);
                         break;
                     }
                 case 1: //down
                     {
-                        AddNode(0, 0, -1);
+                        AddNodeFromLastNoded(0, 0, -1);
                         break;
                     }
                 case 2: // left
                     {
-                        AddNode(-1, 0, 0);
+                        AddNodeFromLastNoded(-1, 0, 0);
                         break;
                     }
                 case 3: // up
                     {
-                        AddNode(0, 0, 1);
+                        AddNodeFromLastNoded(0, 0, 1);
                         break;
                     }
             }
@@ -146,9 +172,82 @@ public class NavMesh_Script : MonoBehaviour
     private void OnDrawGizmos()
     {
         if (nodes == null) return;
-        foreach(var Node in nodes)
+        List<NavMeshNode> Tnodes = nodes; // nodes.OrderBy(NavMeshNode => NavMeshNode.Pos.magnitude).ToList();
+        for (int i = 0; i < nodes.Count; i++)
         {
-            Gizmos.DrawWireCube(Node.Pos, Vector3.one);
+            //if ( i < Tnodes.Count/4)
+            //{
+            //    Gizmos.color = Color.green;
+            //}
+            //else if (i < Tnodes.Count * 2/ 4)
+            //{
+            //    Gizmos.color = Color.yellow;
+            //}
+            //else if (i < Tnodes.Count * 3 / 4)
+            //{
+            //    Gizmos.color = Color.blue;
+            //}
+            //else if (i < Tnodes.Count * 4 / 4)
+            //{
+            //    Gizmos.color = Color.red;
+            //}
+            //else
+            //{
+            //    Gizmos.color = Color.black;
+            //}
+
+            if (nodes[i].ConnectedNodes.Count(x => x != null) >=  8)
+            {
+                Gizmos.color = Color.green;
+            }
+            else if (nodes[i].ConnectedNodes.Count(x => x != null) >= 7)
+            {
+                Gizmos.color = new Color(0.3f, 0.7f, 0f, 1f);
+            }
+            else if (nodes[i].ConnectedNodes.Count(x => x != null) >= 6)
+            {
+                Gizmos.color = new Color(0.5f, 0.5f, 0f, 1f);
+            }
+            else if (nodes[i].ConnectedNodes.Count(x => x != null) >= 5)
+            {
+                Gizmos.color = new Color(0.7f, 0.3f, 0f, 1f);
+            }
+            else if (nodes[i].ConnectedNodes.Count(x => x != null) >= 4)
+            {
+                Gizmos.color = new Color(0.9f, 0.1f, 0f, 1f);
+            }
+            else if (nodes[i].ConnectedNodes.Count(x => x != null) <= 3 && nodes[i].ConnectedNodes.Count(x => x != null) >= 1)
+            {
+                Gizmos.color = Color.red;
+            }
+            else
+            {
+                Gizmos.color = Color.black;
+            }
+            Gizmos.DrawWireCube(Tnodes[i].Pos, Vector3.one);
+                //Gizmos.color = Color.yellow;
+        }
+        //foreach(var Node in nodes)
+        //{
+
+        //    Gizmos.DrawWireCube(Node.Pos, Vector3.one);
+        //    Gizmos.color = Color.yellow;
+        //}
+    }
+
+    private void JoinNode(NavMeshNode node)
+    {
+
+        for (int i = nodes.Count; i > -1; i--)
+        {
+            if (nodes[i].Pos.y > node.Pos.y - MaxTravelHight && nodes[i].Pos.y < node.Pos.y + MaxTravelHight)
+            {
+                if (nodes[i].Pos.x == node.Pos.x - 1 && nodes[i].Pos.y == node.Pos.x + 1)
+                {
+
+                }
+            }
+
         }
     }
 
@@ -156,15 +255,111 @@ public class NavMesh_Script : MonoBehaviour
 public class NavMeshNode
 {
     public Vector3 Pos { get; set; }
-    double PosX = 0;
-    double PosY = 0; // might not be needed
-    double PosZ = 0;
+
+    public int TerrainModifyer { get; set; }
+
+    public NavMeshNodeConnections[] ConnectedNodes = new NavMeshNodeConnections[9];
+
+    //public NavMeshNode[] ConnectedNodes = new NavMeshNode[9];
     public NavMeshNode()
     {
-
+        TerrainModifyer = 1;
+        //ConnectedNodes[4] = this;
     }
-    public NavMeshNode(Vector3 Pos)
+    public NavMeshNode(Vector3 Pos) : this()
     {
         this.Pos = Pos;
+    }
+
+    public bool ConnectNode (List<NavMeshNode> nodes)
+    {
+        foreach (NavMeshNode node in nodes)
+        {
+            if (node.Pos.x <= Pos.x + 1 && node.Pos.x >= Pos.x -1 && node.Pos.z <= Pos.z + 1 && node.Pos.z >= Pos.z - 1)
+            {
+                //from a 2D sky POV the could be a connection
+
+                if (node.Pos.y <= Pos.y + 25 && node.Pos.y >= Pos.y - 25)
+                {
+                    //with in max hight limit
+                    AddNodeConnection(node);
+                }
+            }
+        }
+        return true;
+    }
+    private void AddNodeConnection(NavMeshNode OtherNode)
+    {
+        ConnectedNodes[IdentifyNodeDirection(this, OtherNode)] = new NavMeshNodeConnections(this, OtherNode);
+        OtherNode.ConnectedNodes[IdentifyNodeDirection(OtherNode, this)] = new NavMeshNodeConnections(OtherNode , this);
+    }
+    static private int IdentifyNodeDirection(NavMeshNode Node, NavMeshNode OtherNode)
+    {
+        if (OtherNode.Pos.z > Node.Pos.z && OtherNode.Pos.x == Node.Pos.x) //north
+        {
+            return 2;
+        }
+        if (OtherNode.Pos.x > Node.Pos.x && OtherNode.Pos.z == Node.Pos.z) //east
+        {
+            return 4;
+        }
+        if (OtherNode.Pos.z < Node.Pos.z && OtherNode.Pos.x == Node.Pos.x) //soth
+        {
+            return 6;
+        }
+        if (OtherNode.Pos.x < Node.Pos.x && OtherNode.Pos.z == Node.Pos.z) //west
+        {
+            return 8;
+        }
+        if (OtherNode.Pos.z > Node.Pos.z && OtherNode.Pos.x < Node.Pos.x) //NW
+        {
+            return 1;
+        }
+        if (OtherNode.Pos.z > Node.Pos.z && OtherNode.Pos.x > Node.Pos.x) //NE
+        {
+            return 3;
+        }
+        if (OtherNode.Pos.z < Node.Pos.z && OtherNode.Pos.x == Node.Pos.x) //SE
+        {
+            return 5;
+        }
+        if (OtherNode.Pos.z < Node.Pos.z && OtherNode.Pos.x < Node.Pos.x) //SW
+        {
+            return 7;
+        }
+        return 0;
+    }
+
+}
+public class NavMeshNodeConnections
+{
+    public NavMeshNode StartingNavMeshNode { get; set; }
+    public NavMeshNode EndingNavMeshNode { get; set; }
+    public Vector3 TravelVector { get; set; }
+    public int TravelCost { get; set; }
+
+    public NavMeshNodeConnections()
+    {
+        TravelVector = new Vector3();
+        TravelCost = 1;
+    }
+    public NavMeshNodeConnections(NavMeshNode StartingNavMeshNode, NavMeshNode EndingNavMeshNode) : this() 
+    {
+        this.StartingNavMeshNode = StartingNavMeshNode;
+        this.EndingNavMeshNode = EndingNavMeshNode;
+
+    }
+    public Vector4 CalculateTravelVector()
+    {
+        TravelVector = new Vector3(StartingNavMeshNode.Pos.x - EndingNavMeshNode.Pos.x, StartingNavMeshNode.Pos.y - EndingNavMeshNode.Pos.y, StartingNavMeshNode.Pos.z - EndingNavMeshNode.Pos.z);
+        return TravelVector;
+        //return new Vector3();
+    }
+    public int CalculateTravelCost()   
+    {
+        TravelCost = (int)Vector3.Distance(StartingNavMeshNode.Pos, EndingNavMeshNode.Pos) * StartingNavMeshNode.TerrainModifyer;
+
+        return TravelCost;
+        //return 1;
     }
 }
