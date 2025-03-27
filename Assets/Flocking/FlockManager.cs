@@ -26,10 +26,9 @@ namespace Flocking
         private NativeArray<float4x4> srcMatrices;
         //Output data
         private NativeArray<float4x4> dstMatrices;
-
-        private float[] floatArray;
+        //Y levels of the ground below Boids
         private NativeArray<float> Ylevels;
-        //private float[] Ylevels;
+        private float3[] vertices;
 
         private Transform[] transforms;
         private TransformAccessArray transformAccessArray;
@@ -46,6 +45,11 @@ namespace Flocking
             srcMatrices = new NativeArray<float4x4>(transforms.Length, Allocator.Persistent);
             dstMatrices = new NativeArray<float4x4>(transforms.Length, Allocator.Persistent);
             noiseOffsets = new NativeArray<float>(transforms.Length, Allocator.Persistent);
+            noiseOffsets = new NativeArray<float>(transforms.Length, Allocator.Persistent);
+            Ylevels = new NativeArray<float>(transforms.Length, Allocator.Persistent);
+            vertices = new float3[flockSize];
+
+
 
             for (int i = 0; i < flockSize; i++)
             {
@@ -112,6 +116,7 @@ namespace Flocking
 
 
             //Getting the nearset vertice (on x, z axis) and mapping the position to the Y value of it.
+            Debug.Log("Matrix length: " + dstMatrices.Length);
 
             for (int i = 0; i < dstMatrices.Length; i++)
             {
@@ -135,12 +140,15 @@ namespace Flocking
                     int[] triangles = mesh.triangles;
                     Vector3 closestVertex = mesh.vertices[GetClosestVertex(hitinfo, triangles)];
 
-                    Debug.Log("Closest Vertex = " +  closestVertex);
+                    vertices[i] = closestVertex;
+                    Ylevels[i] = closestVertex.y;
+                    Debug.Log("Value in array:" + Ylevels[i]);
 
-                    //Some error here. I dunno. Good luck.
-                    floatArray[i] = closestVertex.y;
-                    Debug.Log("Should be logs here");
-                    Debug.Log(floatArray[i]);
+                    //If I want to find the highest Y position at a certain point (x,z), I might need to iterate through every vertice in the mesh again - not tenable.
+                    //But theoretically, you iterate through every vertex, throwing away anything that doesn't match the (x,z) coordinates.
+                    //For the ones that do you go check their Y value, updating it whenever you find a new vertex that is higher. Store this value somewhere.
+                    //https://discussions.unity.com/t/optimization-mesh-vertice-finding/702555
+                    //https://www.reddit.com/r/Unity3D/comments/gvgtgo/get_highest_y_value_from_a_list_of_meshes_at/?rdt=57688
                 }
             }
 
@@ -184,8 +192,8 @@ namespace Flocking
                     RotationSpeed = RotationSpeed,
                     Size = srcMatrices.Length,
                     Src = srcMatrices,
-                    Dst = dstMatrices
-                    //YInputs = Ylevels
+                    Dst = dstMatrices,
+                    YInputs = Ylevels
                 }.Schedule();
             }
             else
@@ -253,6 +261,17 @@ namespace Flocking
                 return triangles[index + 1]; // y
             else
                 return triangles[index + 2]; // z
+        }
+
+        private void OnDrawGizmos()
+        {
+            //foreach (float3 vertex in vertices)
+            //{
+            //    //Debug to see which vertex the boid is locked to (Y axis)
+            //    Gizmos.DrawWireSphere(vertex, 0.1f);
+
+            //}
+
         }
     }
 }
