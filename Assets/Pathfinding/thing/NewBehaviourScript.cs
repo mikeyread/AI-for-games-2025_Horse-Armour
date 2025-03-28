@@ -19,6 +19,7 @@ public class NewBehaviourScript : MonoBehaviour
         indices = new int[6];
         mesh = new Mesh();
 
+        CreateMesh();
         this.AddComponent<MeshFilter>();
         this.AddComponent<MeshRenderer>();
         this.GetComponent<MeshRenderer>().sharedMaterial = new Material(Shader.Find("Standard"));
