@@ -1,9 +1,32 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
+using UnityEditor;
 using UnityEngine;
 
-public class QuadtreeWorldGenerator : MonoBehaviour
+
+
+// Settings for World Generation. Not functional ATM.
+public struct WorldGenerationSettings
 {
+    // Perlin Noise Seed
+    public uint World_Seed;
+
+    // Quadtree Settings
+    public uint Quadtree_maxDepth;
+    public float Quadtree_GridSphericalCheck;
+
+    // Chunk Settings
+    public int Chunk_QuadQuantity;
+    public float Chunk_QuadScale;
+}
+
+
+public class QuadtreeWorldGenerator : MonoBehaviour {
+
+    // Settings for the World
+    public WorldGenerationSettings WorldSettings;
+
     private QuadTree q_tree;
     private bool debugGrid = false;
 
@@ -34,7 +57,7 @@ public class QuadtreeWorldGenerator : MonoBehaviour
 }
 
 
-// Testing out Quadtree Chunks
+// A chunk within the Quadtree
 public class QuadTreeChunk {
     private Quad parentGrid;
 
@@ -155,6 +178,11 @@ public class QuadTreeChunk {
         _PostProcessComputeShader.SetBuffer(0, "normals", b_Normals);
         _PostProcessComputeShader.SetBuffer(0, "color", b_Color);
 
+        // Hash Table for randomized color noise
+        _PostProcessComputeShader.SetBuffer(0, "hash", b_HashTable);
+        _ComputeShader.SetFloat("PI", Mathf.PI);
+
+
         _PostProcessComputeShader.SetInt("meshSize", c_MeshQuantity + 2);
         _PostProcessComputeShader.SetFloat("quadScale", c_MeshScale);
 
@@ -163,19 +191,19 @@ public class QuadTreeChunk {
         b_Vertices.GetData(m_Vertices);
         b_Color.GetData(m_Color);
 
-        // Create a texture using the aquired Colour data.
+        // Creates the 2D texture using the aquired Colour data.
         for (int y = 0; y < c_MeshQuantity + 2; y++)
         {
             for (int x = 0; x < c_MeshQuantity + 2; x++)
             {
-                if (y <= 1)
+                // Prevents colouration seams from the vertex skirt by assigning the true vertex grid coordinates the proper colour values.
+                if (x <= 0 || x >= c_MeshQuantity + 2 || y <= 0)
                 {
                     m_Texture.SetPixel(x, y, m_Color[x + y * c_MeshQuantity]);
                 } else
                 {
                     m_Texture.SetPixel(x, y, m_Color[x + y * (c_MeshQuantity + 2)]);
                 }
-                //m_Texture.SetPixel(x, y, m_Color[x + y * (c_MeshQuantity + 2)]);
             }
         }
 
@@ -201,8 +229,6 @@ public class QuadTreeChunk {
 
         // Collider Attatchment
         chunkObject.AddComponent<BoxCollider>();
-        
-        //chunkObject.AddComponent<MeshCollider>();
-        //chunkObject.GetComponent<MeshCollider>().convex = true;
+
     }
 }
