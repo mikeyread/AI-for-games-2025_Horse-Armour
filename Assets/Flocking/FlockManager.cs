@@ -113,44 +113,45 @@ namespace Flocking
             // At the start of the frame, we ensure that all the jobs scheduled are completed.
             flockingHandle.Complete();
 
+            //Debug.Log("Destination: " + Destination.position);
 
-
-            //Getting the nearset vertice (on x, z axis) and mapping the position to the Y value of it.
-            Debug.Log("Matrix length: " + dstMatrices.Length);
-
-            for (int i = 0; i < dstMatrices.Length; i++)
+            //Getting the nearset vertice (on x, z axis) and mapping the position to the Y value of it.          
+            if (LockYPosition)
             {
-                Debug.DrawLine(dstMatrices[i].Position(), new Vector3(dstMatrices[i].Position().x, -10000, dstMatrices[i].Position().z));
-
-                //Debug.Log("Linecast used");
-
-                if (Physics.Linecast(dstMatrices[i].Position(), new Vector3(dstMatrices[i].Position().x, -10000, dstMatrices[i].Position().z), out RaycastHit hitinfo))
+                for (int i = 0; i < dstMatrices.Length; i++)
                 {
-                    MeshCollider meshCollider = hitinfo.collider as MeshCollider;
+                    //Debug.DrawLine(dstMatrices[i].Position(), new Vector3(dstMatrices[i].Position().x, -10000, dstMatrices[i].Position().z));
 
-                    if (meshCollider == null || meshCollider.sharedMesh == null)
+                    //Debug.Log("Linecast used");
+
+                    if (Physics.Linecast(dstMatrices[i].Position(), new Vector3(dstMatrices[i].Position().x, -10000, dstMatrices[i].Position().z), out RaycastHit hitinfo))
                     {
-                        Debug.Log("Null mesh");
-                        return;
+                        MeshCollider meshCollider = hitinfo.collider as MeshCollider;
+
+                        if (meshCollider == null || meshCollider.sharedMesh == null)
+                        {
+                            //Debug.Log("Null mesh");
+                            Ylevels[i] = 0;
+                            return;
+                        }
+
+
+                        Mesh mesh = meshCollider.sharedMesh;
+                        int[] triangles = mesh.triangles;
+                        Vector3 closestVertex = mesh.vertices[GetClosestVertex(hitinfo, triangles)];
+
+                        vertices[i] = closestVertex;
+                        Ylevels[i] = closestVertex.y;
+
+                        //If I want to find the highest Y position at a certain point (x,z), I might need to iterate through every vertice in the mesh again - not tenable.
+                        //But theoretically, you iterate through every vertex, throwing away anything that doesn't match the (x,z) coordinates.
+                        //For the ones that do you go check their Y value, updating it whenever you find a new vertex that is higher. Store this value somewhere.
+                        //https://discussions.unity.com/t/optimization-mesh-vertice-finding/702555
+                        //https://www.reddit.com/r/Unity3D/comments/gvgtgo/get_highest_y_value_from_a_list_of_meshes_at/?rdt=57688
                     }
-                        
-
-                    Mesh mesh = meshCollider.sharedMesh;
-                    //Vector3[] vertices = mesh.vertices;
-                    int[] triangles = mesh.triangles;
-                    Vector3 closestVertex = mesh.vertices[GetClosestVertex(hitinfo, triangles)];
-
-                    vertices[i] = closestVertex;
-                    Ylevels[i] = closestVertex.y;
-                    Debug.Log("Value in array:" + Ylevels[i]);
-
-                    //If I want to find the highest Y position at a certain point (x,z), I might need to iterate through every vertice in the mesh again - not tenable.
-                    //But theoretically, you iterate through every vertex, throwing away anything that doesn't match the (x,z) coordinates.
-                    //For the ones that do you go check their Y value, updating it whenever you find a new vertex that is higher. Store this value somewhere.
-                    //https://discussions.unity.com/t/optimization-mesh-vertice-finding/702555
-                    //https://www.reddit.com/r/Unity3D/comments/gvgtgo/get_highest_y_value_from_a_list_of_meshes_at/?rdt=57688
                 }
             }
+            
 
 
 
@@ -174,9 +175,30 @@ namespace Flocking
 
             JobHandle flockingJob;
 
-            //UpdateDestination(Destination.position);
+        //UpdateDestination(Destination.position);
 
-            //NativeArray<float> nativeArray = new NativeArray<float>(floatArray, allocator.temp);
+
+        //Useful links to look at later (Object Avoidance)
+        //https://ddavidhahn.github.io/cs184_projfinal/#collisions
+        //https://slsdo.github.io/steering-behaviors/
+        //https://www.red3d.com/cwr/nobump/nobump.html
+        //https://vergenet.net/~conrad/boids/pseudocode.html
+        //https://minoqi.medium.com/2d-flocking-algorithm-in-unity-6ee68be74165
+        //https://www.red3d.com/cwr/boids/
+        //https://www.youtube.com/watch?v=bqtqltqcQhw&feature=youtu.be
+        //https://stackoverflow.com/questions/9600801/evenly-distributing-n-points-on-a-sphere/44164075#44164075
+        //https://edirlei.com/aulas/game-ai-2020/GAME_AI_Lecture_07_Steering_Behaviours_2020.html
+        //https://people.ece.cornell.edu/land/courses/ece4760/labs/s2021/Boids/Boids.html
+        //https://learn.unity.com/tutorial/flocking
+        //https://blog.devgenius.io/boids-algorithm-simulating-bird-flocks-in-unity-ec733d529a92
+
+
+        //Arrival
+        //https://edirlei.com/aulas/game-ai-2020/GAME_AI_Lecture_07_Steering_Behaviours_2020.html
+        //https://slsdo.github.io/steering-behaviors/
+
+
+
             if (LockYPosition)
             {
                 //Figure out grabbing the Y position to lock to surface
@@ -194,7 +216,7 @@ namespace Flocking
                     Src = srcMatrices,
                     Dst = dstMatrices,
                     YInputs = Ylevels
-                }.Schedule();
+                }.Schedule(transforms.Length, 32);
             }
             else
             {
@@ -265,12 +287,16 @@ namespace Flocking
 
         private void OnDrawGizmos()
         {
-            //foreach (float3 vertex in vertices)
+            //if (vertices != null) 
             //{
-            //    //Debug to see which vertex the boid is locked to (Y axis)
-            //    Gizmos.DrawWireSphere(vertex, 0.1f);
+            //    foreach (float3 vertex in vertices)
+            //    {
+            //        //Debug to see which vertex the boid is locked to (Y axis)
+            //        Gizmos.DrawWireSphere(vertex, 0.1f);
 
+            //    }
             //}
+            
 
         }
     }

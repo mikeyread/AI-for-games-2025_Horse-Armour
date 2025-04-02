@@ -13,6 +13,8 @@ namespace Flocking
     public struct FlockingWeights
     {
         //
+        public float GoalWeight;
+        //
         public float TendencyWeight;
         //How Important staying aligned in direction is - Higher = less turning / random rotation
         public float AlignmentWeight;
@@ -23,6 +25,7 @@ namespace Flocking
         {
             return new FlockingWeights
             {
+                GoalWeight = 1,
                 TendencyWeight = 1,
                 AlignmentWeight = 1,
                 NoiseWeight = 1
@@ -86,7 +89,7 @@ namespace Flocking
     }
 
     [BurstCompile]
-    public struct YLocked : IJob
+    public struct YLocked : IJobParallelFor
     {
 
         public FlockingWeights Weights;
@@ -110,22 +113,21 @@ namespace Flocking
         [WriteOnly]
         public NativeArray<float4x4> Dst;
 
-        public void Execute()
+        public void Execute(int index)
         {
-            for (int m = 0; m < Size; m++)
-            {
-                var current = Src[m];
+            
+                var current = Src[index];
                 var currentPos = new float3(current.Position().x, 1000, current.Position().z);
                 var perceivedSize = Size - 1;
 
                 var separation = float3.zero;
                 var alignment = float3.zero;
                 var cohesion = float3.zero;
-                var tendency = math.normalizesafe(Goal - currentPos) * Weights.TendencyWeight;
+                var tendency = math.normalizesafe(Goal - currentPos) * Weights.GoalWeight;
 
                 for (int i = 0; i < Size; i++)
                 {
-                    if (i == m)
+                    if (i == index)
                     {
                         continue;
                     }
@@ -145,7 +147,6 @@ namespace Flocking
                     // Perform cohesion
                     cohesion += other;
 
-                    //Debug.Log("Y inputs in thread: " + YInputs[i]);
                 }
 
                 var avg = 1f / perceivedSize;
@@ -166,14 +167,14 @@ namespace Flocking
                     finalRotation = math.lerp(finalRotation.value, targetRotation.value, RotationSpeed * DeltaTime);
                 }
 
-                var pNoise = math.abs(noise.cnoise(new float2(Time, NoiseOffsets[m])) * 2f - 1f);
+                var pNoise = math.abs(noise.cnoise(new float2(Time, NoiseOffsets[index])) * 2f - 1f);
                 var speedNoise = Speed * (1f + pNoise * Weights.NoiseWeight * 0.9f);
                 var finalPosition = currentPos + current.Forward() * speedNoise * DeltaTime;
 
-                finalPosition.y = YInputs[m] + 1;
+                finalPosition.y = YInputs[index] + 1;
 
-                Dst[m] = float4x4.TRS(finalPosition, finalRotation, new float3(1));
-            }
+                Dst[index] = float4x4.TRS(finalPosition, finalRotation, new float3(1));
+            
         }
 
 
@@ -211,7 +212,9 @@ namespace Flocking
             float3 separation = float3.zero;
             float3 alignment = float3.zero;
             float3 cohesion = float3.zero;
+
             var tendency = math.normalizesafe(Goal - currentPos) * Weights.TendencyWeight;
+            Debug.Log("Tendency: " + tendency);
 
             for (int i = 0; i < Size; i++)
             {

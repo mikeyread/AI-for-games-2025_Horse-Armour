@@ -198,7 +198,7 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: 24c89118cbd0f2a48955b8e4a9d00f08,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 175.50931
+      value: 175
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 24c89118cbd0f2a48955b8e4a9d00f08,
         type: 3}
@@ -208,7 +208,7 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: 24c89118cbd0f2a48955b8e4a9d00f08,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 108.74643
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 24c89118cbd0f2a48955b8e4a9d00f08,
         type: 3}
@@ -359,7 +359,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 266229288}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -343.6, y: 160.8, z: 135.55019}
+  m_LocalPosition: {x: -340, y: 160, z: 135}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -657,6 +657,16 @@ PrefabInstance:
     - target: {fileID: 7887980006006981434, guid: d902947db9a127941ba2742b48d67083,
         type: 3}
       propertyPath: LockYPosition
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7887980006006981434, guid: d902947db9a127941ba2742b48d67083,
+        type: 3}
+      propertyPath: Weights.NoiseWeight
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7887980006006981434, guid: d902947db9a127941ba2742b48d67083,
+        type: 3}
+      propertyPath: Weights.AlignmentWeight
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8887217333388661733, guid: d902947db9a127941ba2742b48d67083,
