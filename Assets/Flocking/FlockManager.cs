@@ -135,7 +135,6 @@ namespace Flocking
                             return;
                         }
 
-
                         Mesh mesh = meshCollider.sharedMesh;
                         int[] triangles = mesh.triangles;
                         Vector3 closestVertex = mesh.vertices[GetClosestVertex(hitinfo, triangles)];
@@ -151,14 +150,11 @@ namespace Flocking
                     }
                 }
             }
-            
-
-
 
                         //https://discussions.unity.com/t/pinpointing-one-vertice-with-raycasthit/181509
 
-                // Write the contents from the pointer back to our position.
-                transform.position = *center;
+            // Write the contents from the pointer back to our position.
+            transform.position = *center;
 
             // Copy the contents from the NativeArray to our TransformAccess
             var copyTransformJob = new CopyTransformJob
@@ -191,6 +187,7 @@ namespace Flocking
         //https://people.ece.cornell.edu/land/courses/ece4760/labs/s2021/Boids/Boids.html
         //https://learn.unity.com/tutorial/flocking
         //https://blog.devgenius.io/boids-algorithm-simulating-bird-flocks-in-unity-ec733d529a92
+
 
 
         //Arrival

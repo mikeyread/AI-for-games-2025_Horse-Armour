@@ -116,64 +116,93 @@ namespace Flocking
         public void Execute(int index)
         {
             
-                var current = Src[index];
-                var currentPos = new float3(current.Position().x, 1000, current.Position().z);
-                var perceivedSize = Size - 1;
+            var current = Src[index];
+            var currentPos = new float3(current.Position().x, 1000, current.Position().z);
+            var perceivedSize = Size - 1;
 
-                var separation = float3.zero;
-                var alignment = float3.zero;
-                var cohesion = float3.zero;
-                var tendency = math.normalizesafe(Goal - currentPos) * Weights.GoalWeight;
+            var separation = float3.zero;
+            var alignment = float3.zero;
+            var cohesion = float3.zero;
+            var tendency = math.normalizesafe(Goal - currentPos) * Weights.TendencyWeight;
 
-                for (int i = 0; i < Size; i++)
+            var target = Goal;
+            var targetRadius = 1.5f;
+            var slowRadius = 20f;
+
+            var targetDirection = Vector3.zero;
+            var test = float3.zero;
+
+            for (int i = 0; i < Size; i++)
+            {
+                targetDirection = target - currentPos;
+
+                test = targetDirection;
+
+                float distance = targetDirection.magnitude;
+
+                if (distance > targetRadius)
                 {
-                    if (i == index)
-                    {
-                        continue;
-                    }
+                    targetDirection.Normalize();
+                    //current.Forward() = Vector3.zero;
 
-                    var b = Src[i];
-                    var other = new float3 (b.Position().x, 1000, b.Position().z);
+                    if (distance < slowRadius)
+                    { 
+                        targetDirection *= Speed * (distance / slowRadius);
+                    }
+                    else
+                    {
+                        targetDirection *= Speed;
+                    }
+                }
+                
+
+
+                if (i == index)
+                {
+                    continue;
+                }
+
+                var b = Src[i];
+                var other = new float3 (b.Position().x, 1000, b.Position().z);
 
 
                     
 
-                    // Perform separation
-                    separation += TransformExtensions.SeparationVector(currentPos, other, MaxDist);
+                // Perform separation
+                separation += TransformExtensions.SeparationVector(currentPos, other, MaxDist);
 
-                    // Perform alignment
-                    alignment += b.Forward();
+                // Perform alignment
+                alignment += b.Forward();
 
-                    // Perform cohesion
-                    cohesion += other;
+                // Perform cohesion
+                cohesion += other;
 
-                }
 
-                var avg = 1f / perceivedSize;
+                    
+            }
 
-                alignment *= avg;
-                cohesion *= avg;
-                cohesion = math.normalizesafe(cohesion - currentPos);
-                var direction = separation +
-                                 Weights.AlignmentWeight * alignment +
-                                 cohesion +
-                                 Weights.TendencyWeight * tendency;
+            var avg = 1f / perceivedSize;
 
-                var targetRotation = current.Forward().QuaternionBetween(math.normalizesafe(direction));
-                var finalRotation = current.Rotation();
+            alignment *= avg;
+            cohesion *= avg;
+            cohesion = math.normalizesafe(cohesion - currentPos);
+            var direction = separation + (Weights.AlignmentWeight * alignment) + cohesion + /*(Weights.TendencyWeight * tendency)*/ + test;
 
-                if (!targetRotation.Equals(current.Rotation()))
-                {
-                    finalRotation = math.lerp(finalRotation.value, targetRotation.value, RotationSpeed * DeltaTime);
-                }
+            var targetRotation = current.Forward().QuaternionBetween(math.normalizesafe(direction));
+            var finalRotation = current.Rotation();
 
-                var pNoise = math.abs(noise.cnoise(new float2(Time, NoiseOffsets[index])) * 2f - 1f);
-                var speedNoise = Speed * (1f + pNoise * Weights.NoiseWeight * 0.9f);
-                var finalPosition = currentPos + current.Forward() * speedNoise * DeltaTime;
+            if (!targetRotation.Equals(current.Rotation()))
+            {
+                finalRotation = math.lerp(finalRotation.value, targetRotation.value, RotationSpeed * DeltaTime);
+            }
 
-                finalPosition.y = YInputs[index] + 1;
+            var pNoise = math.abs(noise.cnoise(new float2(Time, NoiseOffsets[index])) * 2f - 1f);
+            var speedNoise = Speed * (1f + pNoise * Weights.NoiseWeight * 0.9f);
+            var finalPosition = currentPos + current.Forward() * speedNoise * DeltaTime;
 
-                Dst[index] = float4x4.TRS(finalPosition, finalRotation, new float3(1));
+            finalPosition.y = YInputs[index] + 1;
+
+            Dst[index] = float4x4.TRS(finalPosition, finalRotation, new float3(1));
             
         }
 
@@ -246,10 +275,8 @@ namespace Flocking
             alignment *= avg;
             cohesion *= avg;
             cohesion = math.normalizesafe(cohesion - currentPos);
-            var direction = separation +
-                             Weights.AlignmentWeight * alignment +
-                             cohesion +
-                             Weights.TendencyWeight * tendency;
+            var direction = separation + (Weights.AlignmentWeight * alignment) + cohesion + (Weights.TendencyWeight * tendency);
+            
 
             var targetRotation = current.Forward().QuaternionBetween(math.normalizesafe(direction));
             var finalRotation = current.Rotation();
