@@ -1,5 +1,9 @@
 #pragma kernel ChunkPostVertex
 
+
+StructuredBuffer<float> hash;
+uniform float PI;
+
 RWStructuredBuffer<float3> vertices;
 RWStructuredBuffer<float3> normals;
 RWStructuredBuffer<float4> color;
@@ -7,18 +11,93 @@ RWStructuredBuffer<float4> color;
 uniform uint meshSize;
 uniform float quadScale;
 
-// 
+
+float SteepLog(float value)
+{
+    //return clamp(1 - log(pow(10 * abs(value), 0.2f)), 0, 1);
+    return clamp(-log(pow(abs(value), 0.5f)), 0, 1);
+}
+
+float SmoothStep(float value)
+{
+    return clamp(pow(value, 2) - pow(value, 4) + pow(value, 2), 0, 1);
+}
+
+float SmootherStep(float value)
+{
+    return clamp(pow(value, 5) * 6 - pow(value, 4) * 15 + pow(value, 3) * 10, 0, 1);
+}
+
+float PerlinLerp(float left, float right, float percent)
+{
+    return percent * right - left;
+}
+
+float PerlinCosineLerp(float left, float right, float percent)
+{
+    return ((cos(PI * percent) + 1) / 2) * left + ((1 - cos(PI * percent)) / 2 * right);
+}
+
+
+float Noise(float2 pos)
+{
+    uint flooredX = (int) floor(pos.x);
+    uint flooredY = (int) floor(pos.y);
+    
+    uint truePos = flooredX + flooredY * meshSize;
+    uint trueMeshScale = meshSize * meshSize;
+    
+    float bottomLeft = hash[truePos % trueMeshScale];
+    float bottomRight = hash[(truePos + 1) % trueMeshScale];
+    float topLeft = hash[(truePos + meshSize) % trueMeshScale];
+    float topRight = hash[(truePos + 1 + meshSize) % trueMeshScale];
+    
+    float interpolatedX = pos.x - flooredX;
+    float interpolatedY = pos.y - flooredY;
+    
+    float xLerp = PerlinCosineLerp(bottomLeft, bottomRight, interpolatedX);
+    float yLerp = PerlinCosineLerp(topLeft, topRight, interpolatedX);
+    
+    float xSmooth = SmootherStep(xLerp);
+    float ySmooth = SmootherStep(yLerp);
+    
+    return PerlinCosineLerp(xSmooth, ySmooth, interpolatedY);
+}
+
+
+float FractalSum(float2 pos, float2 offset, int octaves, float freq, float amp, float pers, float lac, bool turbulent, bool normalized)
+{
+    float sum = 0;
+    float totalSum = 0;
+    
+    pos = abs(pos + offset);
+    
+    for (int i = 0; i < octaves; i++)
+    {
+        sum += amp * Noise(pos * freq);
+        totalSum += amp;
+        
+        amp *= pers;
+        freq *= lac;
+    }
+    
+    if (turbulent == true)
+        sum = 0 - abs(sum - totalSum / 2) * 2;
+    if (normalized == true)
+        sum = sum / totalSum;
+
+    return sum;
+}
+
 float range(float minVal, float maxVal, float val)
 {
     return max(minVal, min(maxVal, val));
 }
 
-
 float3 lerpFloat3(float3 lhs, float3 rhs, float lerp)
 {
     return lhs + (rhs - lhs) * range(0, 1, lerp);
 }
-
 
 float3 minFloat3(float3 lhs, float3 rhs)
 {
@@ -34,10 +113,11 @@ float3 maxFloat3(float3 lhs, float3 rhs)
 
 // Takes values for base colourmap and a Steep colouration, then determines the resulting true Colour based on the Base colourmap and the steep colourmap
 // A steepness of zero is pure base Colour, while a steepness of one is pure Steep Colour.
-float3 ColorRange(float3 lhsBase, float3 rhsBase, float3 steepCol, float vertY, float steep, float range)
+float3 ColorRange(float3 lhsBase, float3 rhsBase, float3 lhsSteepCol, float3 rhsSteepCol, float vertY, float steep, float range)
 {
     float3 baseCol = lerpFloat3(lhsBase, rhsBase, abs(vertY / range));
-    float3 trueCol = lerpFloat3(steepCol, baseCol, steep);
+    float3 steepCol = lerpFloat3(lhsSteepCol, rhsSteepCol, abs(vertY / range));
+    float3 trueCol = lerpFloat3(baseCol, steepCol, SteepLog(steep));
     
     return trueCol;
 }
@@ -50,18 +130,29 @@ void ChunkPostVertex (uint3 id : SV_DispatchThreadID) {
     // Interpolates colouration based on the respective y offset of each vertex, creating a rudimentary colourmap.
     float3 col = float3(0, 0, 0);
     
-    if (-1000 <= vertices[vertexIndex].y <= 0)
+    // Terrain colouration variation using Perlin Noise
+    float yOffset = FractalSum(vertices[vertexIndex].xz / 128, float2(813710, -721637), 8, 0.00033f, 256, 0.5f, 2, false, false);
+    float yPos = vertices[vertexIndex].y + yOffset;
+    
+    // Below Zero Colour
+    if (vertices[vertexIndex].y <= 0)
     {
-        col = ColorRange(float3(0.1, 0.45, 0.15), float3(0.11, 0, 1), float3(0, 0, 0.7), vertices[vertexIndex].y, normals[vertexIndex].y, 1000);
+        col = ColorRange(float3(0.1, 0.45, 0.15), float3(0.5, 0.15, 0.15), float3(0, 0, 0.7), float3(0.35, 0.1, 0.1), yPos, normals[vertexIndex].y, yOffset + 1000);
     }
-    else if (0 <= vertices[vertexIndex].y <= 1500)
+    
+    // Grassland Colour
+    if (0 <= vertices[vertexIndex].y && vertices[vertexIndex].y <= 750.0f)
     {
-        col = ColorRange(float3(0.1, 0.45, 0.15), float3(0.25, 0.25, 0.25), float3(0.5, 0.15, 0.15), vertices[vertexIndex].y, normals[vertexIndex].y, 1500);
+        col = ColorRange(float3(0.1, 0.45, 0.15), float3(0.5, 0.15, 0.15), float3(0.35, 0.1, 0.1), float3(0.5, 0.15, 0.15), yPos, normals[vertexIndex].y, yOffset + 750);
     }
-    else if (1500 <= vertices[vertexIndex].y <= 2500)
+    
+    // Mountainous Colour
+    if (750.0f <= vertices[vertexIndex].y)
     {
-        col = ColorRange(float3(0.15, 0.15, 0.15), float3(1, 1, 1), float3(0.05, 0.05, 0.05), vertices[vertexIndex].y, normals[vertexIndex].y, 2000);
+        col = ColorRange(float3(0.5, 0.15, 0.15), float3(1, 1, 1), float3(0.5, 0.15, 0.15), float3(1, 1, 1), yPos - (750 - yOffset), normals[vertexIndex].y, yOffset + 1500);
     }
+    
+    
     
     color[vertexIndex] = float4(col, 1);
     

@@ -5,10 +5,9 @@ using UnityEngine;
 // Global Parameters for the quad tree
 static class QuadTreeParameters
 {
-    public static int maxDepth = 7;
+    public static int maxDepth = 15;
     public static float GridSphereCheck = 2.5f;
 }
-
 
 public class QuadTree
 {
@@ -207,6 +206,7 @@ public class Quad
     {
         // Cleans up the Mesh and Game Object before assigning null to the chunk object itself.
         if (chunk == null) return;
+
         Mesh.Destroy(this.chunk.chunkMesh);
         GameObject.Destroy(this.chunk.chunkObject);
         chunk = null;
