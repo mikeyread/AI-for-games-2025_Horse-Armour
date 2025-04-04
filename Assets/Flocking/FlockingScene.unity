@@ -601,7 +601,7 @@ MonoBehaviour:
   RotationSpeed: 4
   Destination: {fileID: 1771076878}
   FlockMember: {fileID: 1303516883}
-  UseSingleThread: 0
+  LockYPosition: 0
 --- !u!135 &1219462221
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -1249,9 +1249,14 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7887980006006981434, guid: d902947db9a127941ba2742b48d67083,
         type: 3}
+      propertyPath: MaxSpeed
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7887980006006981434, guid: d902947db9a127941ba2742b48d67083,
+        type: 3}
       propertyPath: Destination
       value: 
-      objectReference: {fileID: 1939948567}
+      objectReference: {fileID: 0}
     - target: {fileID: 7887980006006981434, guid: d902947db9a127941ba2742b48d67083,
         type: 3}
       propertyPath: FlockMember

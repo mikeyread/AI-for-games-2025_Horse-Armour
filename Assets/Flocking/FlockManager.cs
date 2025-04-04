@@ -158,7 +158,7 @@ namespace Flocking
                     //    test.GetIndices();
 
                     //}
-                    //Debug.Log("HIT");
+                    Debug.Log("HIT");
                 }
             }
 
