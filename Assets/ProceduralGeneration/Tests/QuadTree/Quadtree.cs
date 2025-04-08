@@ -5,8 +5,8 @@ using UnityEngine;
 // Global Parameters for the quad tree
 static class QuadTreeParameters
 {
-    public static int maxDepth = 15;
-    public static float GridSphereCheck = 2.5f;
+    public static int maxDepth = 13;
+    public static float GridSphereCheck = 1.75f;
 }
 
 public class QuadTree
@@ -100,9 +100,7 @@ public class Quad
     public void RefreshPosition(Vector3 newPosition) { g_Position = newPosition; }
 
 
-    public void UpdateQuadtree(Vector3 playerPosition)
-    {
-
+    public void UpdateQuadtree(Vector3 playerPosition) {
         if (WithinDistance(playerPosition)) Subdivide();
         else CollapseQuadtree();
 
@@ -118,27 +116,29 @@ public class Quad
         branch.topRight.UpdateQuadtree(playerPosition);
     }
 
-    private void CollapseQuadtree()
-    {
-        if (branch.bottomLeft != null)
+    // Collapses the Quadtree due to not being within local distance to retain it's LOD.
+    private void CollapseQuadtree() {
+        if (!IsLeaf())
         {
-            branch.bottomLeft.DestroyChunk();
-            branch.bottomLeft = null;
-        }
-        if (branch.bottomRight != null)
-        {
-            branch.bottomRight.DestroyChunk();
-            branch.bottomRight = null;
-        }
-        if (branch.topLeft != null)
-        {
-            branch.topLeft.DestroyChunk();
-            branch.topLeft = null;
-        }
-        if (branch.topRight != null)
-        {
-            branch.topRight.DestroyChunk();
-            branch.topRight = null;
+            branch.bottomLeft.CollapseQuadtree();
+            branch.bottomRight.CollapseQuadtree();
+            branch.topLeft.CollapseQuadtree();
+            branch.topRight.CollapseQuadtree();
+
+            if (branch.bottomLeft.IsLeaf())
+            {
+                branch.bottomLeft.DestroyChunk();
+                branch.bottomLeft = null;
+
+                branch.bottomRight.DestroyChunk();
+                branch.bottomRight = null;
+
+                branch.topLeft.DestroyChunk();
+                branch.topLeft = null;
+
+                branch.topRight.DestroyChunk();
+                branch.topRight = null;
+            }
         }
     }
 
@@ -193,8 +193,9 @@ public class Quad
     public bool WithinDistance(Vector3 playerPosition)
     {
         float SphereOfInfluence = (n_Bounds * QuadTreeParameters.GridSphereCheck).sqrMagnitude;
+        Vector3 snappedPlayerPosition = new(playerPosition.x, 0, playerPosition.z);
 
-        if ((playerPosition - g_Position).sqrMagnitude <= SphereOfInfluence) return true;
+        if ((snappedPlayerPosition - g_Position).sqrMagnitude <= SphereOfInfluence) return true;
         else return false;
     }
 
@@ -202,9 +203,8 @@ public class Quad
     public Vector3 TRCorner_Position() { return g_Position - new Vector3(-n_Bounds.x / 2, 0, -n_Bounds.z / 2); }
 
 
-    public void DestroyChunk()
-    {
-        // Cleans up the Mesh and Game Object before assigning null to the chunk object itself.
+    // Cleans up the Mesh and Game Object before assigning null to the chunk object itself.
+    public void DestroyChunk() {
         if (chunk == null) return;
 
         Mesh.Destroy(this.chunk.chunkMesh);

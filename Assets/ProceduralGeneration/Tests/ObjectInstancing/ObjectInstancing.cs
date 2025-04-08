@@ -1,61 +1,51 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel;
-using Unity.VisualScripting;
 using UnityEngine;
+
+using Random = UnityEngine.Random;
 
 
 public class ObjectInstancing : MonoBehaviour
 {
-    [SerializeField] int grassRadius;
-    int prevRadius;
-    private int index;
+    [SerializeField] public float radius;
+    [SerializeField] uint maximumObjects;
 
-    private ComputeShader _GrassField;
+    [SerializeField] public GameObject prefab;
+    GameObject[] activeObjects;
 
-    private ComputeBuffer b_GrassPositions;
-
-    private Vector3[] o_GrassPositions;
-
-    private void Awake()
-    {
-        b_GrassPositions?.Dispose();
-        _GrassField = Instantiate(Resources.Load<ComputeShader>("CS_ChunkObjects"));
+    private void Awake() {
+        activeObjects = new GameObject[maximumObjects];
         
-        index = grassRadius * grassRadius;
-        o_GrassPositions = new Vector3[index];
+        for (int i = 0; i < maximumObjects; i++) {
+            activeObjects[i] = (GameObject)Instantiate(prefab, Vector3.zero, Quaternion.identity);
+            activeObjects[i].SetActive(false);
+        }
     }
 
-    private void Update()
-    {
-        if (grassRadius != prevRadius)
-        {
-            prevRadius = grassRadius;
-            index = grassRadius * grassRadius;
-            o_GrassPositions = new Vector3[index];
+    private void Update() {
+
+        // Regenerates objects if they are either inactive or not within player distance.
+        foreach (var obj in activeObjects) {
+            if (obj.activeSelf != true) RegenerateObject(obj);
+            if (!withinPlayerDistance(obj.transform.position)) RegenerateObject(obj);
         }
-        if (grassRadius <= 0) return;
-
-        b_GrassPositions = new ComputeBuffer(index, sizeof(float) * 3);
-
-        _GrassField.SetInt("size", grassRadius);
-        _GrassField.SetVector("playerPos", Camera.main.transform.position);
-        _GrassField.SetBuffer(0, "positions", b_GrassPositions);
-
-        _GrassField.Dispatch(0, index / 32, index / 32, 1);
-
-        b_GrassPositions.GetData(o_GrassPositions);
-
-        b_GrassPositions?.Dispose();
     }
 
-    private void OnDrawGizmos()
-    {
-        if (o_GrassPositions == null) return;
+    private void RegenerateObject(GameObject obj) {
+        Vector3 flattenedCamPos = new(Camera.main.transform.position.x, 0, Camera.main.transform.position.z);
+        obj.transform.position = flattenedCamPos + RandomFlatPosition() * radius;
+        obj.SetActive(true);
+    }
 
-        foreach (var pos in o_GrassPositions) {
-            Gizmos.DrawWireCube(pos, Vector3.one / 2);
-        }
+    private Vector3 RandomFlatPosition() {
+        Vector3 position = new Vector3(Random.value * 2 - 1, 0, Random.value * 2 - 1);
+        return position;
+    }
+
+    private bool withinPlayerDistance(Vector3 objectPosition) {
+        if ((objectPosition - Camera.main.transform.position).sqrMagnitude > radius * radius) return false;
+        else return true;
     }
 }
+
+
+// Objects Generate within a larger radius than the view
+// Objects that are outside are hidden, and any objects at an extreme distance are completely regenerated.
