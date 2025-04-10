@@ -115,7 +115,7 @@ float3 maxFloat3(float3 lhs, float3 rhs)
 // A steepness of zero is pure base Colour, while a steepness of one is pure Steep Colour.
 float3 ColorRange(float3 lhsBase, float3 rhsBase, float3 lhsSteepCol, float3 rhsSteepCol, float vertY, float steep, float heightRange)
 {
-    float3 baseCol = lerpFloat3(lhsBase, rhsBase, abs(vertY / heightRange));
+    float3 baseCol = lerpFloat3(lhsBase, rhsBase, abs(vertY) / heightRange);
     float3 steepCol = lerpFloat3(lhsSteepCol, rhsSteepCol, abs(vertY / heightRange));
     float3 trueCol = lerpFloat3(baseCol, steepCol, steep);
     
@@ -134,28 +134,33 @@ void ChunkPostVertex (uint3 id : SV_DispatchThreadID) {
     float yOffset = FractalSum(vertices[vertexIndex].xz / meshSize, float2(813710, -721637), 8, 0.00033f, 256, 0.5f, 2, false, false);
     float yPos = vertices[vertexIndex].y + yOffset;
 
-    float normalVal = 1 - dot(normals[vertexIndex].y, float3(0,1,0));
+    float normalVal = 1 - dot(normals[vertexIndex], float3(0,1,0));
     normalVal = saturate(normalVal / 0.75);
     
 
     // Below Zero Colour
-    if (vertices[vertexIndex].y <= 0)
+    if (vertices[vertexIndex].y < 0)
     {
-        col = ColorRange(float3(0.1, 0.45, 0.15), float3(0.5, 0.15, 0.15), float3(0.35, 0.1, 0.1), float3(0.35, 0.1, 0.1), yPos, normalVal, -1000);
+        col = ColorRange(float3(0.1, 0.25, 0.1), float3(0.1, 0.45, 0.1), float3(0.35, 0.1, 0.1), float3(0.35, 0.1, 0.1), yPos, normalVal, 1000);
     }
     
     // Grassland Colour
-    if (0 <= vertices[vertexIndex].y && vertices[vertexIndex].y <= 750.0f)
+    if (0 <= vertices[vertexIndex].y && vertices[vertexIndex].y < 750.0f)
     {
-        col = ColorRange(float3(0.1, 0.45, 0.15), float3(0.5, 0.15, 0.15), float3(0.35, 0.1, 0.1), float3(0.5, 0.15, 0.15), yPos, normalVal, 750);
+        col = ColorRange(float3(0.1, 0.45, 0.1), float3(0.1, 0.25, 0.1), float3(0.35, 0.1, 0.1), float3(0.5, 0.15, 0.15), yPos, normalVal, 750);
+    }
+    
+    // Hill Transition Colour
+    if (750.0f <= vertices[vertexIndex].y && vertices[vertexIndex].y < 1150.0f)
+    {
+        col = ColorRange(float3(0.1, 0.25, 0.1), float3(0.5, 0.15, 0.15), float3(0.5, 0.15, 0.15), float3(0.4, 0.25, 0.25), max(0, yPos - 750), normalVal, 400);
     }
     
     // Mountainous Colour
-    if (750.0f <= vertices[vertexIndex].y)
+    if (1150.0f <= vertices[vertexIndex].y)
     {
-        col = ColorRange(float3(0.5, 0.15, 0.15), float3(1, 1, 1), float3(0.5, 0.15, 0.15), float3(0.25, 0.25, 0.25), max(0, yPos - 750), normalVal, 2000);
+        col = ColorRange(float3(0.5, 0.15, 0.15), float3(1, 1, 1), float3(0.4, 0.25, 0.25), float3(0.1, 0.1, 0.1), max(0, yPos - 1150), normalVal, 2000);
     }
-    
     
     
     color[vertexIndex] = float4(col, 1);
