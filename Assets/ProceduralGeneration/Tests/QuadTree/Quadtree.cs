@@ -1,11 +1,11 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 
 // Global Parameters for the quad tree
-static class QuadTreeParameters
-{
-    public static int maxDepth = 13;
+static class QuadTreeParameters {
+    public static uint maxDepth = 7;
     public static float GridSphereCheck = 1.75f;
 }
 
@@ -13,8 +13,6 @@ public class QuadTree
 {
     private List<Quad> ActiveGrids;
     private Quad qt_Root;
-    private Vector3 playerpos;
-
 
     public QuadTree(float scale, Vector3 position)
     {
@@ -25,7 +23,7 @@ public class QuadTree
     // The Root node, and subsiquently the entire rest of the Quadtree perform the recursion generation until a maximum depth is reached.
     public void UpdateGrid(Vector3 currentPosition)
     {
-        playerpos = Camera.main.transform.position;
+        Vector3 playerpos = Camera.main.transform.position;
 
         qt_Root.RefreshPosition(currentPosition);
         qt_Root.UpdateQuadtree(playerpos);
@@ -69,9 +67,9 @@ public class QuadTree
 
 
 // A Grid node inside the Quadtree
-public class Quad
-{
-    public int n_depth;
+public class Quad {
+
+    public uint n_depth;
 
     public Vector3 g_Position;
     public Vector3 n_Bounds;
@@ -89,7 +87,7 @@ public class Quad
 
     public QuadTreeChunk chunk;
 
-    public Quad(int depth, Vector3 position, Vector3 bounds)
+    public Quad(uint depth, Vector3 position, Vector3 bounds)
     {
         n_depth = depth;
         g_Position = position;
@@ -101,19 +99,24 @@ public class Quad
 
 
     public void UpdateQuadtree(Vector3 playerPosition) {
+
         if (WithinDistance(playerPosition)) Subdivide();
         else CollapseQuadtree();
 
-        if (IsLeaf())
+        if (!IsLeaf()) UpdateChildren(playerPosition);
+        else
         {
             GenerateChunk();
-            return;
         }
+    }
 
+    private void UpdateChildren(Vector3 playerPosition) {
         branch.bottomLeft.UpdateQuadtree(playerPosition);
         branch.bottomRight.UpdateQuadtree(playerPosition);
         branch.topLeft.UpdateQuadtree(playerPosition);
         branch.topRight.UpdateQuadtree(playerPosition);
+
+        DestroyChunk();
     }
 
     // Collapses the Quadtree due to not being within local distance to retain it's LOD.
@@ -143,14 +146,11 @@ public class Quad
     }
 
 
-    private void Subdivide()
-    {
+    private void Subdivide() {
+        if (!IsLeaf()) return;
 
         // First determines if the maximum depth has been reached, and if not, whether the Node has present branches as to skip new branch generation.
-        if (n_depth < QuadTreeParameters.maxDepth)
-        {
-            DestroyChunk();
-
+        if (n_depth < QuadTreeParameters.maxDepth) {
             if (branch.bottomLeft != null) return;
             else branch.bottomLeft = new(n_depth + 1, g_Position - n_Bounds / 4, n_Bounds / 2);
 
@@ -162,6 +162,8 @@ public class Quad
 
             if (branch.topRight != null) return;
             else branch.topRight = new(n_depth + 1, g_Position + n_Bounds / 4, n_Bounds / 2);
+
+            DestroyChunk();
         }
         else
         {
@@ -190,8 +192,7 @@ public class Quad
 
     // Calculates if the quad is within a reasonable distance from the player to subdivide, rather than calculating purely within a bounding area.
     // This is overall more seamless than bounding grid detection and allows for cross Neighbor detection. The only "caveat" is that it increases LOD detail from outside grid bounds.
-    public bool WithinDistance(Vector3 playerPosition)
-    {
+    public bool WithinDistance(Vector3 playerPosition) {
         float SphereOfInfluence = (n_Bounds * QuadTreeParameters.GridSphereCheck).sqrMagnitude;
         Vector3 snappedPlayerPosition = new(playerPosition.x, 0, playerPosition.z);
 

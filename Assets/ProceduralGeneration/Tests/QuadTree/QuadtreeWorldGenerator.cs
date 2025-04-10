@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 
 
@@ -28,13 +29,12 @@ public class QuadtreeWorldGenerator : MonoBehaviour {
     public WorldGenerationSettings WorldSettings;
 
     private QuadTree q_tree;
-    private bool debugGrid = false;
 
+    private void Awake() {
+        Vector3 flattenedPosition = new(transform.position.x, 0, transform.position.z);
 
-    private void Awake()
-    {
         // Quad Tree is generated from the bottom up by specifying the unit scale of the highest detail chunk.
-        q_tree = new((WorldOptions.CHUNK_QUAD_AMOUNT * WorldOptions.CHUNK_QUAD_SCALAR) * Mathf.Pow(2, QuadTreeParameters.maxDepth), transform.position);
+        q_tree = new((WorldOptions.CHUNK_QUAD_AMOUNT * WorldOptions.CHUNK_QUAD_SCALAR) * Mathf.Pow(2, QuadTreeParameters.maxDepth), flattenedPosition);
     }
 
     private void Update()
@@ -44,14 +44,17 @@ public class QuadtreeWorldGenerator : MonoBehaviour {
 
 
     // Wireframe Mode for QuadMesh
-    private void OnDrawGizmos()
-    {
+    private void OnDrawGizmos() {
         if (q_tree == null) return;
-        if (!debugGrid) return;
 
-        foreach (var Grid in q_tree.GetActive())
-        {
-            Gizmos.DrawWireCube(Grid.g_Position, Grid.n_Bounds);
+        foreach (var Grid in q_tree.GetActive()) {
+            
+            if (Grid.chunk != null && Grid.chunk.objectPositions != null) {
+                foreach (var obj in Grid.chunk.objectPositions)
+                {
+                    Gizmos.DrawSphere(obj, 0.5f);
+                }
+            }
         }
     }
 }
@@ -84,6 +87,7 @@ public class QuadTreeChunk {
     private Color[] m_Color;
     private int[] m_Indices;
 
+    public List<Vector3> objectPositions;
 
     public QuadTreeChunk(Quad parent)
     {
@@ -230,5 +234,61 @@ public class QuadTreeChunk {
         // Collider Attatchment
         chunkObject.AddComponent<BoxCollider>();
 
+        // Object Placement
+        if (parentGrid.n_depth >= QuadTreeParameters.maxDepth) PopulateObjects();
+    }
+
+
+    // Populates a Chunk with scattered objects, namely Trees.
+    private void PopulateObjects() {
+        objectPositions = new List<Vector3>();
+
+        
+        // TODO - Use Density to determine how often objects are spawned in a given area (lower density = less objects in an area).
+        float density = 0.5f;
+
+
+        float scale = c_MeshQuantity * c_MeshScale;
+        for (int y = 0; y < c_MeshQuantity; y++)
+        {
+            for (int x = 0; x < c_MeshQuantity; x++)
+            {
+                float xPos = (x * c_MeshScale) - scale / 2;
+                float zPos = (y * c_MeshScale) - scale / 2;
+
+                // Determine if the spot is valid within the hard-coded object placement map.
+                if (PerlinNoise2D.PerlinNoise(
+                    parentGrid.g_Position.x + xPos,
+                    parentGrid.g_Position.z + zPos,
+                    231873,
+                    8,
+                    0.15f,
+                    1,
+                    0.5f,
+                    2,
+                    false,
+                    true
+                    ) >= 0.5)
+                {
+                    // Find the vertex Y
+                    int vertexIndex = (x + 1) + (y + 1) * (c_MeshQuantity + 2);
+                    float vertexY = m_Vertices[vertexIndex].y;
+
+                    // Find the normal
+
+
+                    // Add the Object if the normal is valid
+                    float noiseOffset = PerlinNoise2D.Noise2D(Mathf.Abs(parentGrid.g_Position.x + xPos) * 15, Mathf.Abs(parentGrid.g_Position.z + zPos) * 15);
+
+                    Vector3 objectPosition = new Vector3(
+                        xPos + noiseOffset,
+                        vertexY,
+                        zPos + noiseOffset
+                    );
+
+                    objectPositions.Add(parentGrid.g_Position + objectPosition);
+                }
+            }
+        }
     }
 }

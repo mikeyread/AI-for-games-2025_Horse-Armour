@@ -304,8 +304,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fc9e3eef9a8be784e938dc010d8fe820, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  radius: 1000
-  maximumObjects: 1024
+  loadRadius: 1000
+  chunkSize: 32
   prefab: {fileID: 7920568211316642196, guid: 923fe87d966d77740a5e99c59de6fc25, type: 3}
 --- !u!1 &1004448513
 GameObject:
