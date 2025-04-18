@@ -24,6 +24,10 @@ public class NavMesh_Script : MonoBehaviour
 
     public int MaxTravelHight { get; set; }
 
+
+    private float time = 0f;
+    private bool done = false;
+
     void Start()
     {
         MaxTravelHight = 10;
@@ -106,20 +110,19 @@ public class NavMesh_Script : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        float temp = 0f;
-        bool done = false;
         //SpawnNodesSpiral(10);
         //nodes
         //nodes.Sort();
         //nodes = nodes.OrderBy(NavMeshNode => NavMeshNode.Pos.magnitude).ToList();
-        if (temp !> 5)
+        if (time <= 5)
         {
-            temp += Time.deltaTime;
+            time += Time.deltaTime;
         }
         else
         {
             if (!done)
             {
+                Debug.Log("Navigate Tree Triggered");
                 done = true;
                 NavagateTree();
 
@@ -130,18 +133,31 @@ public class NavMesh_Script : MonoBehaviour
     //to get active leafs
     private void NavagateTree()
     {
-        if (quadtreeWorldGenerator == null) return;
+        if (quadtreeWorldGenerator == null)
+        {
+            Debug.Log("Null Tree");
+            return;
 
+        }
         foreach (var Grid in quadtreeWorldGenerator.q_tree.GetActive())
         {
+
+            Debug.Log("for each thing");
             if (Grid.IsLeaf())
             {
+                Debug.Log("LEAF");
 
-                if (Grid.n_depth >= quadtreeWorldGenerator.WorldSettings.Quadtree_maxDepth - 3)
-                {
-                    SpawnNodesSqure(Grid.g_Position, (int)Grid.chunk.c_MeshScale);
-                }
 
+                //DEAL WITH THIS
+                //if (Grid.n_depth >= quadtreeWorldGenerator.WorldSettings.Quadtree_maxDepth)
+                //{
+                    
+                    SpawnNodesSqure(Grid.g_Position, (int)(Grid.chunk.c_MeshScale * Grid.chunk.c_MeshQuantity));
+
+                    Debug.Log("Grid: " + Grid.g_Position);
+                    Debug.Log("Chunk: " + Grid.chunk.c_MeshScale);
+                    
+                //}
             }
 
         }

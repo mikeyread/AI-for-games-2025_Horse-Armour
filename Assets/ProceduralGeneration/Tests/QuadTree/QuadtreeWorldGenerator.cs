@@ -81,7 +81,7 @@ public class QuadTreeChunk {
     public ComputeBuffer b_Color;
 
     public float c_MeshScale { get; private set; }
-    private int c_MeshQuantity;
+    public int c_MeshQuantity { get; private set; }
     private int m_IndexLimit;
 
     private Texture2D m_Texture;
