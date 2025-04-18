@@ -17,7 +17,7 @@ RenderSettings:
   m_Fog: 1
   m_FogColor: {r: 0.64705884, g: 0.87058824, b: 1, a: 1}
   m_FogMode: 2
-  m_FogDensity: 0.0000066
+  m_FogDensity: 0.00000066
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
   m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
@@ -255,7 +255,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 531612633}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 89.83, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -274,6 +274,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd2e32b0b31790b44a0efd003420ca3a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  WorldSettings:
+    World_Seed: 0
+    Quadtree_maxDepth: 10
+    Quadtree_GridSphericalCheck: 2.5
+    Chunk_QuadQuantity: 32
+    Chunk_QuadScale: 0.5
+    objDensity: 0.05
+    prefab: {fileID: 5405781741735463407, guid: 6021422935829b04ebc1477bd8030ad7,
+      type: 3}
 --- !u!1 &1453062785
 GameObject:
   m_ObjectHideFlags: 0
@@ -478,7 +487,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1721996346}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 101.13, z: 0}
+  m_LocalPosition: {x: -0.09, y: 101.13, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
