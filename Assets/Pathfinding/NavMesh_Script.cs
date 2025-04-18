@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using Unity.VisualScripting;
 using UnityEngine;
 using static UnityEngine.UI.GridLayoutGroup;
 
@@ -110,7 +112,7 @@ public class NavMesh_Script : MonoBehaviour
         {
             for (float x = StartingTLVector.x; x < (StartingTLVector.x + edgeLength); x++)
             {
-                nodes.Add(new NavMeshNode(new Vector3(x, 0, z)));
+                nodes.Add(new NavMeshNode(new Vector3(x, transform.position.y, z)));
                 nodes.LastOrDefault().ConnectNode(nodes);
             }
 
@@ -268,6 +270,16 @@ public class NavMeshNode
     }
     public NavMeshNode(Vector3 Pos) : this()
     {
+
+        if (Physics.Linecast(new Vector3 (Pos.x,Pos.y + 1000, Pos.z), new Vector3(Pos.x, Pos.y - 1000, Pos.z), out RaycastHit hitinfo))
+        {
+            Debug.Log("Hit at " + hitinfo.collider.gameObject.transform.position.y + " was tagged as " + hitinfo.collider.tag);
+            if (hitinfo.collider.tag == "WorldChunk")
+            {
+                Pos.y = hitinfo.collider.gameObject.transform.position.y;
+            }
+
+        }
         this.Pos = Pos;
     }
 
