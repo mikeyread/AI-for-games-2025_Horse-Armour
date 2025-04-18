@@ -33,7 +33,7 @@ public class QuadtreeWorldGenerator : MonoBehaviour {
     // Settings for the World
     public WorldGenerationSettings WorldSettings;
 
-    private QuadTree q_tree;
+    public QuadTree q_tree {get; private set; }
 
     private void Awake() {
         if (WorldSettings.World_Seed != 0) Random.InitState((int)WorldSettings.World_Seed);
@@ -80,7 +80,7 @@ public class QuadTreeChunk {
     public ComputeBuffer b_UV;
     public ComputeBuffer b_Color;
 
-    private float c_MeshScale;
+    public float c_MeshScale { get; private set; }
     private int c_MeshQuantity;
     private int m_IndexLimit;
 

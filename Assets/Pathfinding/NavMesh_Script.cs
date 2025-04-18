@@ -9,6 +9,9 @@ using static UnityEngine.UI.GridLayoutGroup;
 
 public class NavMesh_Script : MonoBehaviour
 {
+    [SerializeField]
+    public QuadtreeWorldGenerator quadtreeWorldGenerator;
+
     public List<NavMeshNode> nodes = new List<NavMeshNode>();
     // Start is called before the first frame update
 
@@ -31,7 +34,9 @@ public class NavMesh_Script : MonoBehaviour
         TLCorner = nodes.LastOrDefault().Pos;
         BRCorner = nodes.LastOrDefault().Pos;
 
-        SpawnNodesSqure(transform.position, 25);
+        //NavagateTree();
+
+        //SpawnNodesSqure(transform.position, 25);
 
 
         //TLCorner = transform.position;
@@ -101,11 +106,47 @@ public class NavMesh_Script : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        float temp = 0f;
+        bool done = false;
         //SpawnNodesSpiral(10);
         //nodes
         //nodes.Sort();
         //nodes = nodes.OrderBy(NavMeshNode => NavMeshNode.Pos.magnitude).ToList();
+        if (temp !> 5)
+        {
+            temp += Time.deltaTime;
+        }
+        else
+        {
+            if (!done)
+            {
+                done = true;
+                NavagateTree();
+
+            }
+        }
     }
+
+    //to get active leafs
+    private void NavagateTree()
+    {
+        if (quadtreeWorldGenerator == null) return;
+
+        foreach (var Grid in quadtreeWorldGenerator.q_tree.GetActive())
+        {
+            if (Grid.IsLeaf())
+            {
+
+                if (Grid.n_depth >= quadtreeWorldGenerator.WorldSettings.Quadtree_maxDepth - 3)
+                {
+                    SpawnNodesSqure(Grid.g_Position, (int)Grid.chunk.c_MeshScale);
+                }
+
+            }
+
+        }
+    }
+
     private void SpawnNodesSqure(Vector3 StartingTLVector,int edgeLength)
     {
         for (float z = StartingTLVector.z; z > (StartingTLVector.z - edgeLength); z--) 
@@ -271,15 +312,15 @@ public class NavMeshNode
     public NavMeshNode(Vector3 Pos) : this()
     {
 
-        if (Physics.Linecast(new Vector3 (Pos.x,Pos.y + 1000, Pos.z), new Vector3(Pos.x, Pos.y - 1000, Pos.z), out RaycastHit hitinfo))
-        {
-            Debug.Log("Hit at " + hitinfo.collider.gameObject.transform.position.y + " was tagged as " + hitinfo.collider.tag);
-            if (hitinfo.collider.tag == "WorldChunk")
-            {
-                Pos.y = hitinfo.collider.gameObject.transform.position.y;
-            }
+        //if (Physics.Linecast(new Vector3 (Pos.x,Pos.y + 1000, Pos.z), new Vector3(Pos.x, Pos.y - 1000, Pos.z), out RaycastHit hitinfo))
+        //{
+        //    Debug.Log("Hit at " + hitinfo.collider.gameObject.transform.position.y + " was tagged as " + hitinfo.collider.tag);
+        //    if (hitinfo.collider.tag == "WorldChunk")
+        //    {
+        //        Pos.y = hitinfo.collider.gameObject.transform.position.y;
+        //    }
 
-        }
+        //}
         this.Pos = Pos;
     }
 
@@ -374,4 +415,7 @@ public class NavMeshNodeConnections
         return TravelCost;
         //return 1;
     }
+
+
+
 }
