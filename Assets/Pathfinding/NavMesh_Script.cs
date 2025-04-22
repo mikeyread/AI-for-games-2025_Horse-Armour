@@ -343,7 +343,7 @@ public class NavMesh_Script : MonoBehaviour
 
 public class AStarNode
 {
-    //public 
+    //public Vector3 
 }
 public class NavMeshNode
 {
