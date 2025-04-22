@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -327,6 +328,22 @@ public class NavMesh_Script : MonoBehaviour
         }
     }
 
+    public List<Vector3> FindPath()
+    {
+
+
+        return new List<Vector3>();
+    }
+
+    private Vector3 FindAbsuluteDistances(Vector3 Start, Vector3 End)
+    {
+        return (Start - End);
+    }
+}
+
+public class AStarNode
+{
+    //public 
 }
 public class NavMeshNode
 {
