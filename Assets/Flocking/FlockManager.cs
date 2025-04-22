@@ -4,6 +4,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.VisualScripting;
 using Unity.VisualScripting.Antlr3.Runtime;
 using UnityEngine;
 using UnityEngine.Jobs;
@@ -23,8 +24,12 @@ namespace Flocking
         private NativeArray<float> noiseOffsets;
         //Input data
         private NativeArray<float4x4> srcMatrices;
-        //Outpud data
+        //Output data
         private NativeArray<float4x4> dstMatrices;
+        //Y levels of the ground below Boids
+        private NativeArray<float> Ylevels;
+        private float3[] vertices;
+
         private Transform[] transforms;
         private TransformAccessArray transformAccessArray;
         private JobHandle flockingHandle;
@@ -35,11 +40,16 @@ namespace Flocking
         private void Start()
         {
             // We spawn n GameObjects that we will manipulate. We store the positions and their associated noise offsets.
-            // The nosie offsts are useful for providing a unique sense of movement per element.
+            // The noise offsts create random movement per boid.
             transforms = new Transform[flockSize];
             srcMatrices = new NativeArray<float4x4>(transforms.Length, Allocator.Persistent);
             dstMatrices = new NativeArray<float4x4>(transforms.Length, Allocator.Persistent);
             noiseOffsets = new NativeArray<float>(transforms.Length, Allocator.Persistent);
+            noiseOffsets = new NativeArray<float>(transforms.Length, Allocator.Persistent);
+            Ylevels = new NativeArray<float>(transforms.Length, Allocator.Persistent);
+            vertices = new float3[flockSize];
+
+
 
             for (int i = 0; i < flockSize; i++)
             {
@@ -103,64 +113,45 @@ namespace Flocking
             // At the start of the frame, we ensure that all the jobs scheduled are completed.
             flockingHandle.Complete();
 
-            
+            //Debug.Log("Destination: " + Destination.position);
 
-            //Getting the nearset vertice (on x, z axis) and mapping the position to the Y value of it.
-            foreach (var boid in dstMatrices)
+            //Getting the nearset vertice (on x, z axis) and mapping the position to the Y value of it.          
+            if (LockYPosition)
             {
-                Debug.DrawLine(boid.Position(), new Vector3(boid.Position().x, 10000, boid.Position().z));
-
-                if (Physics.Linecast(boid.Position(), new Vector3(boid.Position().x, -10000, boid.Position().z), out RaycastHit hitinfo))
+                for (int i = 0; i < dstMatrices.Length; i++)
                 {
-                //bool newFilter = false;
-                //if (mfs.Length > 0)
-                //{
-                //    foreach (MeshFilter filter in mfs)
-                //    {
-                //        if (hitinfo.collider.gameObject.GetComponent<MeshFilter>() == filter)
-                //        {
-                //            newFilter = true;
-                //            break;
-                //        }
-                //    }
+                    //Debug.DrawLine(dstMatrices[i].Position(), new Vector3(dstMatrices[i].Position().x, -10000, dstMatrices[i].Position().z));
 
-                //    if (newFilter)
-                //    {
-                //        mfs[mfs.Length + 1] = hitinfo.collider.gameObject.GetComponent<MeshFilter>();
-                //    }
-                //}
+                    //Debug.Log("Linecast used");
 
+                    if (Physics.Linecast(dstMatrices[i].Position(), new Vector3(dstMatrices[i].Position().x, -10000, dstMatrices[i].Position().z), out RaycastHit hitinfo))
+                    {
+                        MeshCollider meshCollider = hitinfo.collider as MeshCollider;
 
-                //https://discussions.unity.com/t/pinpointing-one-vertice-with-raycasthit/181509
+                        if (meshCollider == null || meshCollider.sharedMesh == null)
+                        {
+                            //Debug.Log("Null mesh");
+                            Ylevels[i] = 0;
+                            return;
+                        }
 
-                    //if (mfs.Length > 0)
-                    //{
-                    //    foreach (MeshFilter filter1 in mfs)
-                    //    {
-                    //        Debug.Log(filter1.GetInstanceID());
-                    //    }
-                    //}
+                        Mesh mesh = meshCollider.sharedMesh;
+                        int[] triangles = mesh.triangles;
+                        Vector3 closestVertex = mesh.vertices[GetClosestVertex(hitinfo, triangles)];
 
-                    //mfs[1] = hitinfo.collider.gameObject.GetComponent<MeshFilter>();
+                        vertices[i] = closestVertex;
+                        Ylevels[i] = closestVertex.y;
 
-                    //if (mfs[1])
-                    //{
-                    //    Matrix4x4 localToWorld = transform.localToWorldMatrix;
-
-                    //    //Causing insane lag??
-                    //    for (int i = 0; i < mfs[1].mesh.vertices.Length; i++)
-                    //    {
-                    //        Vector3 world_v = localToWorld.MultiplyPoint3x4(mfs[1].mesh.vertices[i]);
-                    //        Debug.Log(world_v);
-                    //    }
-
-                    //    Mesh test = mf.mesh;
-                    //    test.GetIndices();
-
-                    //}
-                    Debug.Log("HIT");
+                        //If I want to find the highest Y position at a certain point (x,z), I might need to iterate through every vertice in the mesh again - not tenable.
+                        //But theoretically, you iterate through every vertex, throwing away anything that doesn't match the (x,z) coordinates.
+                        //For the ones that do you go check their Y value, updating it whenever you find a new vertex that is higher. Store this value somewhere.
+                        //https://discussions.unity.com/t/optimization-mesh-vertice-finding/702555
+                        //https://www.reddit.com/r/Unity3D/comments/gvgtgo/get_highest_y_value_from_a_list_of_meshes_at/?rdt=57688
+                    }
                 }
             }
+
+                        //https://discussions.unity.com/t/pinpointing-one-vertice-with-raycasthit/181509
 
             // Write the contents from the pointer back to our position.
             transform.position = *center;
@@ -180,9 +171,30 @@ namespace Flocking
 
             JobHandle flockingJob;
 
-            //UpdateDestination(Destination.position);
+        //UpdateDestination(Destination.position);
 
-            //BatchOverlapSphere();
+
+        //Useful links to look at later (Object Avoidance)
+        //https://ddavidhahn.github.io/cs184_projfinal/#collisions
+        //https://slsdo.github.io/steering-behaviors/
+        //https://www.red3d.com/cwr/nobump/nobump.html
+        //https://vergenet.net/~conrad/boids/pseudocode.html
+        //https://minoqi.medium.com/2d-flocking-algorithm-in-unity-6ee68be74165
+        //https://www.red3d.com/cwr/boids/
+        //https://www.youtube.com/watch?v=bqtqltqcQhw&feature=youtu.be
+        //https://stackoverflow.com/questions/9600801/evenly-distributing-n-points-on-a-sphere/44164075#44164075
+        //https://edirlei.com/aulas/game-ai-2020/GAME_AI_Lecture_07_Steering_Behaviours_2020.html
+        //https://people.ece.cornell.edu/land/courses/ece4760/labs/s2021/Boids/Boids.html
+        //https://learn.unity.com/tutorial/flocking
+        //https://blog.devgenius.io/boids-algorithm-simulating-bird-flocks-in-unity-ec733d529a92
+
+
+
+        //Arrival
+        //https://edirlei.com/aulas/game-ai-2020/GAME_AI_Lecture_07_Steering_Behaviours_2020.html
+        //https://slsdo.github.io/steering-behaviors/
+
+
 
             if (LockYPosition)
             {
@@ -199,8 +211,9 @@ namespace Flocking
                     RotationSpeed = RotationSpeed,
                     Size = srcMatrices.Length,
                     Src = srcMatrices,
-                    Dst = dstMatrices
-                }.Schedule();
+                    Dst = dstMatrices,
+                    YInputs = Ylevels
+                }.Schedule(transforms.Length, 32);
             }
             else
             {
@@ -242,37 +255,46 @@ namespace Flocking
 
         }
 
-
-        void BatchOverlapSphere()
-        {
-            var commands = new NativeArray<OverlapSphereCommand>(1, Allocator.TempJob);
-            var results = new NativeArray<ColliderHit>(3, Allocator.TempJob);
-
-
-            //for (int i  = 0; i < srcMatrices.Length - 1; i++)
-            //{
-                //commands[i] = new OverlapSphereCommand(srcMatrices[i].Position(), 10f, QueryParameters.Default);
-
-            //}
-
-            //OverlapSphereCommand.ScheduleBatch(commands, results, 1, 3).Complete();
-
-            //foreach (var hit in results)
-                //Debug.Log(hit.collider.name);
-
-            commands.Dispose();
-            results.Dispose();
-        }
-
         public unsafe void UpdateDestination(Vector3 newDest)
         {
             Destination.position = newDest;
         }
+
+
+        //Finding nearest vertex to Raycast Hit
+        public static int GetClosestVertex(RaycastHit hitInfo, int[] triangles)
+        {
+            var b = hitInfo.barycentricCoordinate;
+            int index = hitInfo.triangleIndex * 3;
+            if (triangles == null || index < 0 || index + 2 >= triangles.Length)
+                return -1;
+
+            if (b.x > b.y)
+            {
+                if (b.x > b.z)
+                    return triangles[index]; // x
+                else
+                    return triangles[index + 2]; // z
+            }
+            else if (b.y > b.z)
+                return triangles[index + 1]; // y
+            else
+                return triangles[index + 2]; // z
+        }
+
+        private void OnDrawGizmos()
+        {
+            //if (vertices != null) 
+            //{
+            //    foreach (float3 vertex in vertices)
+            //    {
+            //        //Debug to see which vertex the boid is locked to (Y axis)
+            //        Gizmos.DrawWireSphere(vertex, 0.1f);
+
+            //    }
+            //}
+            
+
+        }
     }
-
-
-
-
-
-
 }
