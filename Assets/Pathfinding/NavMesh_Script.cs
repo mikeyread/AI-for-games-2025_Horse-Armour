@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UIElements;
 using static UnityEngine.UI.GridLayoutGroup;
 
 public class NavMesh_Script : MonoBehaviour
@@ -152,7 +153,7 @@ public class NavMesh_Script : MonoBehaviour
                 //if (Grid.n_depth >= quadtreeWorldGenerator.WorldSettings.Quadtree_maxDepth)
                 //{
                     
-                    SpawnNodesSqure(Grid.g_Position, (int)(Grid.chunk.c_MeshScale * Grid.chunk.c_MeshQuantity));
+                    SpawnNodesSqure(Grid.g_Position, (int)(Grid.chunk.c_MeshScale * Grid.chunk.c_MeshQuantity), Grid.chunk);
 
                     Debug.Log("Grid: " + Grid.g_Position);
                     Debug.Log("Chunk: " + Grid.chunk.c_MeshScale);
@@ -163,13 +164,17 @@ public class NavMesh_Script : MonoBehaviour
         }
     }
 
-    private void SpawnNodesSqure(Vector3 StartingTLVector,int edgeLength)
+    private void SpawnNodesSqure(Vector3 StartingTLVector,int edgeLength, QuadTreeChunk chunk)
     {
-        for (float z = StartingTLVector.z; z > (StartingTLVector.z - edgeLength); z--) 
+        for /*(float z = StartingTLVector.z - edgeLength; z < (StartingTLVector.z); z++)*/  (float z = StartingTLVector.z /*- (edgeLength / 2)*/; z > (StartingTLVector.z - edgeLength); z--) 
         {
-            for (float x = StartingTLVector.x; x < (StartingTLVector.x + edgeLength); x++)
+            for (float x = StartingTLVector.x /*- (edgeLength/2)*/; x < (StartingTLVector.x + edgeLength); x++)
             {
-                nodes.Add(new NavMeshNode(new Vector3(x, transform.position.y, z)));
+                Vector3 localoffset = new Vector3 (chunk.Chunk.transform.position.x - x,0 , chunk.Chunk.transform.position.z - z);
+                int vertexIndex = ((int)(transform.position.x) + 1) + ((int)(transform.position.z) + 1) * (chunk.c_MeshQuantity + 2);
+                Debug.Log(vertexIndex);
+                float vertexY = chunk.chunkMesh.vertices[vertexIndex].y;
+                nodes.Add(new NavMeshNode(new Vector3(x, vertexY /*transform.position.y*/, z)));
                 nodes.LastOrDefault().ConnectNode(nodes);
             }
 
