@@ -143,10 +143,10 @@ public class NavMesh_Script : MonoBehaviour
         foreach (var Grid in quadtreeWorldGenerator.q_tree.GetActive())
         {
 
-            Debug.Log("for each thing");
+            //Debug.Log("for each thing");
             if (Grid.IsLeaf())
             {
-                Debug.Log("LEAF");
+                //Debug.Log("LEAF");
 
 
                 //DEAL WITH THIS
@@ -156,7 +156,7 @@ public class NavMesh_Script : MonoBehaviour
                     SpawnNodesSqure(Grid.g_Position, (int)(Grid.chunk.c_MeshScale * Grid.chunk.c_MeshQuantity), Grid.chunk);
 
                     Debug.Log("Grid: " + Grid.g_Position);
-                    Debug.Log("Chunk: " + Grid.chunk.c_MeshScale);
+                    //Debug.Log("Chunk: " + Grid.chunk.c_MeshScale);
                     
                 //}
             }
@@ -166,12 +166,24 @@ public class NavMesh_Script : MonoBehaviour
 
     private void SpawnNodesSqure(Vector3 StartingTLVector,int edgeLength, QuadTreeChunk chunk)
     {
-        for /*(float z = StartingTLVector.z - edgeLength; z < (StartingTLVector.z); z++)*/  (float z = StartingTLVector.z /*- (edgeLength / 2)*/; z > (StartingTLVector.z - edgeLength); z--) 
+        for (float z = StartingTLVector.z - (edgeLength / 2); z < (StartingTLVector.z + edgeLength - (edgeLength / 2)); z++)  //(float z = StartingTLVector.z + (edgeLength / 2); z > (StartingTLVector.z - (edgeLength + (edgeLength / 2))); z--) 
         {
-            for (float x = StartingTLVector.x /*- (edgeLength/2)*/; x < (StartingTLVector.x + edgeLength); x++)
+            for (float x = StartingTLVector.x - (edgeLength / 2); x < (StartingTLVector.x + edgeLength - (edgeLength / 2)); x++)
             {
-                Vector3 localoffset = new Vector3 (chunk.Chunk.transform.position.x - x,0 , chunk.Chunk.transform.position.z - z);
-                int vertexIndex = ((int)(transform.position.x) + 1) + ((int)(transform.position.z) + 1) * (chunk.c_MeshQuantity + 2);
+                Debug.Log("Grid: " + StartingTLVector);
+                Debug.Log(edgeLength);
+                Debug.Log(x);
+                Debug.Log(z);
+                float temp1 = (StartingTLVector.x - (edgeLength / 2));
+                float temp2 = (StartingTLVector.z - (edgeLength / 2));
+                Debug.Log(temp1);
+                Debug.Log(temp2);
+                //Vector3 localoffset = new Vector3 ((chunk.Chunk.transform.position.x - (edgeLength / 2)) - x,0 ,(chunk.Chunk.transform.position.z - (edgeLength / 2)) - z);
+                Vector3 localoffset = new Vector3(x - temp1, 0, z - temp2);
+                Debug.Log(localoffset.x);
+                Debug.Log(localoffset.z);
+                Debug.Log(chunk.c_MeshQuantity);
+                int vertexIndex = ((int)(localoffset.x) + 1) + ((int)(localoffset.z) + 1) * (chunk.c_MeshQuantity + 2);
                 Debug.Log(vertexIndex);
                 float vertexY = chunk.chunkMesh.vertices[vertexIndex].y;
                 nodes.Add(new NavMeshNode(new Vector3(x, vertexY /*transform.position.y*/, z)));
