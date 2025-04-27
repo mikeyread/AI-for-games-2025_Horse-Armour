@@ -122,11 +122,38 @@ namespace Flocking
             //Getting the nearset vertice (on x, z axis) and mapping the position to the Y value of it.          
             if (LockYPosition)
             {
+                var results = new NativeArray<RaycastHit>(2, Allocator.TempJob);
+                var commands = new NativeArray<RaycastCommand>(1, Allocator.TempJob);
+
+
                 for (int i = 0; i < dstMatrices.Length; i++)
                 {
                     //Debug.DrawLine(dstMatrices[i].Position(), new Vector3(dstMatrices[i].Position().x, -10000, dstMatrices[i].Position().z));
 
-                    //Debug.Log("Linecast used");
+                    //Vector3 origin = dstMatrices[i].Position();
+
+                    //Vector3 direction = new Vector3(0f, -1, 0f);
+
+                    //commands[i] = new RaycastCommand(origin, direction, QueryParameters.Default);
+
+                    //JobHandle handle = RaycastCommand.ScheduleBatch(commands, results, 1, 2, default(JobHandle));
+
+                    //handle.Complete();
+
+                    //foreach (var hit in results)
+                    //{
+                    //    if (hit.collider != null)
+                    //    {
+                    //        //no hit
+                    //    }
+                    //    Debug.Log("name: " + hit.collider.name);
+                    //}
+
+                    //results.Dispose();
+                    //commands.Dispose();
+
+
+
 
                     if (Physics.Linecast(dstMatrices[i].Position(), new Vector3(dstMatrices[i].Position().x, -10000, dstMatrices[i].Position().z), out RaycastHit hitinfo))
                     {
@@ -152,9 +179,6 @@ namespace Flocking
                         //https://discussions.unity.com/t/optimization-mesh-vertice-finding/702555
                         //https://www.reddit.com/r/Unity3D/comments/gvgtgo/get_highest_y_value_from_a_list_of_meshes_at/?rdt=57688
                     }
-
-
-
                 }
             }
 
@@ -200,6 +224,10 @@ namespace Flocking
         //Arrival
         //https://edirlei.com/aulas/game-ai-2020/GAME_AI_Lecture_07_Steering_Behaviours_2020.html
         //https://slsdo.github.io/steering-behaviors/
+
+            
+
+
 
 
 
