@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using Unity.VisualScripting;
+using UnityEditor.MemoryProfiler;
 using UnityEngine;
 using UnityEngine.UIElements;
 using static UnityEngine.UI.GridLayoutGroup;
@@ -13,6 +14,11 @@ public class NavMesh_Script : MonoBehaviour
 {
     [SerializeField]
     public QuadtreeWorldGenerator quadtreeWorldGenerator;
+
+    [SerializeField]
+    float TerrainModifyer;
+
+    NavMeshSettings NavMeshsettings = new NavMeshSettings();
 
     public List<NavMeshNode> nodes = new List<NavMeshNode>();
     // Start is called before the first frame update
@@ -24,21 +30,32 @@ public class NavMesh_Script : MonoBehaviour
 
     public int Direction { get; set; }
 
-    public int MaxTravelHight { get; set; }
+    [SerializeField]
+    public int MaxTravelHight;
 
-
+    public  List<AStarNode> CurrentShortestPath = new List<AStarNode>();
+    public List<AStarNode> NodesLookedAt = new List<AStarNode>();
     private float time = 0f;
     private bool done = false;
+    private float time2 = 0f;
+    private bool done2 = false;
+
+
+    //Testing 
+    Vector3 PathStart = Vector3.zero;
+    Vector3 PathEnd = Vector3.zero;
 
     void Start()
     {
-        MaxTravelHight = 10;
+        NavMeshsettings.MaxTravelHight = MaxTravelHight;
+        NavMeshsettings.TerrainModifyer = TerrainModifyer;
 
-        nodes.Add(new NavMeshNode(transform.position));
+
+        //.Add(new NavMeshNode(transform.position, nodes.Count + 1));
         //nodes.Sort();
         //nodes = nodes.OrderBy(NavMeshNode => NavMeshNode.Pos).ToList();
-        TLCorner = nodes.LastOrDefault().Pos;
-        BRCorner = nodes.LastOrDefault().Pos;
+        //TLCorner = nodes.LastOrDefault().Pos;
+        //BRCorner = nodes.LastOrDefault().Pos;
 
         //NavagateTree();
 
@@ -104,7 +121,7 @@ public class NavMesh_Script : MonoBehaviour
 
     private bool AddNodeFromLastNoded(int x, int y, int z)
     {
-        nodes.Add(new NavMeshNode((nodes.LastOrDefault().Pos) + new Vector3(x, y, z)));
+        nodes.Add(new NavMeshNode((nodes.LastOrDefault().Pos) + new Vector3(x, y, z), nodes.Count));
         return true;
     }
 
@@ -116,7 +133,7 @@ public class NavMesh_Script : MonoBehaviour
         //nodes
         //nodes.Sort();
         //nodes = nodes.OrderBy(NavMeshNode => NavMeshNode.Pos.magnitude).ToList();
-        if (time <= 5)
+        if (time <= 3)
         {
             time += Time.deltaTime;
         }
@@ -126,10 +143,95 @@ public class NavMesh_Script : MonoBehaviour
             {
                 Debug.Log("Navigate Tree Triggered");
                 done = true;
-                NavagateTree();
+                //NavagateTree();
+                SpawnNodesSetSqure(new Vector3(0, 0, 0), 100);
+
 
             }
         }
+
+        if (time2 <= 6)
+        {
+            time2 += Time.deltaTime;
+        }
+        else
+        {
+            if (!done2)
+            {
+                done2 = true;
+
+                Debug.Log("Navigate Tree Done");
+                //FindPath(new Vector3(5, 0, 2), new Vector3(-12, 0, -2));
+
+            }
+        }
+
+        //Debug.Log("test");
+        PlayerOderUnit();
+    }
+
+    private void FixedUpdate()
+    {
+        //Debug.Log("test");
+        //PlayerOderUnit();
+    }
+
+    private void PlayerOderUnit()
+    {
+
+        //Debug.Log("FrameUpdate");
+        if (Input.GetMouseButtonDown(1))
+        {
+            Debug.Log("mouse");
+            Vector3 target = new Vector3();
+            RaycastHit hit;
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+            if (Physics.Raycast(ray, out hit, Mathf.Infinity))
+            {
+                target = hit.point;
+            }
+
+            //target.y += 1;
+
+            PathStart = target;
+
+            //Unit.transform.position = target;
+
+            //Debug.Log("Start path at " + PathStart);
+
+        }
+
+        if (Input.GetMouseButtonUp(1))
+        {
+            Vector3 target = new Vector3();
+            RaycastHit hit;
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+            if (Physics.Raycast(ray, out hit, Mathf.Infinity))
+            {
+                target = hit.point;
+            }
+
+            //target.y = Unit.transform.position.y;
+            //target.y += 2;
+
+            PathEnd = target;
+
+            //Debug.Log("end path at " + PathEnd);
+
+            //Unit.transform.position = Vector3.Lerp(Unit.unitStart, Unit.unitEnd, 0.5f);
+            //Unit.transform.rotation = Quaternion.LookRotation(Vector3.Cross(Unit.unitStart, Unit.unitEnd));
+
+            //Unit.transform.position = target;
+            //if (PathStart != Vector3.zero && PathEnd != Vector3.zero)
+
+            Debug.Log("Start path at " + PathStart);
+            Debug.Log("end path at " + PathEnd);
+            CurrentShortestPath = new List<AStarNode>();
+            FindPath(PathStart, PathEnd);
+        }
+
     }
 
     //to get active leafs
@@ -171,28 +273,95 @@ public class NavMesh_Script : MonoBehaviour
         {
             for (float x = StartingTLVector.x - (edgeLength / 2); x < (StartingTLVector.x + edgeLength - (edgeLength / 2)); x++)
             {
-                Debug.Log("Grid: " + StartingTLVector);
-                Debug.Log(edgeLength);
-                Debug.Log(x);
-                Debug.Log(z);
+                //Debug.Log("Grid: " + StartingTLVector);
+                //Debug.Log(edgeLength);
+                //Debug.Log(x);
+                //Debug.Log(z);
                 float temp1 = (StartingTLVector.x - (edgeLength / 2));
                 float temp2 = (StartingTLVector.z - (edgeLength / 2));
-                Debug.Log(temp1);
-                Debug.Log(temp2);
+                //Debug.Log(temp1);
+                //Debug.Log(temp2);
                 //Vector3 localoffset = new Vector3 ((chunk.Chunk.transform.position.x - (edgeLength / 2)) - x,0 ,(chunk.Chunk.transform.position.z - (edgeLength / 2)) - z);
                 Vector3 localoffset = new Vector3(x - temp1, 0, z - temp2);
-                Debug.Log(localoffset.x);
-                Debug.Log(localoffset.z);
-                Debug.Log(chunk.c_MeshQuantity);
+                //Debug.Log(localoffset.x);
+                //Debug.Log(localoffset.z);
+                //Debug.Log(chunk.c_MeshQuantity);
                 int vertexIndex = ((int)(localoffset.x) + 1) + ((int)(localoffset.z) + 1) * (chunk.c_MeshQuantity + 2);
-                Debug.Log(vertexIndex);
+                //Debug.Log(vertexIndex);
                 float vertexY = chunk.chunkMesh.vertices[vertexIndex].y;
-                nodes.Add(new NavMeshNode(new Vector3(x, vertexY /*transform.position.y*/, z)));
-                nodes.LastOrDefault().ConnectNode(nodes);
+                if (Physics.Raycast(new Ray(new Vector3(x, vertexY + 10f, z), new Vector3(0, 1000, 0)), out RaycastHit Hit))
+                {
+                    //Debug.Log("Hit");
+                    if (Hit.collider.name == "Wall")
+                    {
+                        //Debug.Log("Hit Wall");
+                    }
+                    else
+                    {
+                        nodes.Add(new NavMeshNode(new Vector3(x, vertexY /*transform.position.y*/, z), nodes.Count));
+                    }
+                }
+                else
+                {
+                    nodes.Add(new NavMeshNode(new Vector3(x, vertexY /*transform.position.y*/, z), nodes.Count));
+                }
+
+
+                nodes.Last().ConnectNode(nodes);
             }
 
         }
     }
+
+    private void SpawnNodesSetSqure(Vector3 StartingTLVector, int edgeLength)
+    {
+        for (float z = StartingTLVector.z - (edgeLength / 2); z < (StartingTLVector.z + edgeLength - (edgeLength / 2)); z++)  //(float z = StartingTLVector.z + (edgeLength / 2); z > (StartingTLVector.z - (edgeLength + (edgeLength / 2))); z--) 
+        {
+            for (float x = StartingTLVector.x - (edgeLength / 2); x < (StartingTLVector.x + edgeLength - (edgeLength / 2)); x++)
+            {
+                //Debug.Log("Grid: " + StartingTLVector);
+                //Debug.Log(edgeLength);
+                //Debug.Log(x);
+                //Debug.Log(z);
+                float temp1 = (StartingTLVector.x - (edgeLength / 2));
+                float temp2 = (StartingTLVector.z - (edgeLength / 2));
+                //Debug.Log(temp1);
+                //Debug.Log(temp2);
+                //Vector3 localoffset = new Vector3 ((chunk.Chunk.transform.position.x - (edgeLength / 2)) - x,0 ,(chunk.Chunk.transform.position.z - (edgeLength / 2)) - z);
+                Vector3 localoffset = new Vector3(x - temp1, 0, z - temp2);
+                //Debug.Log(localoffset.x);
+                //Debug.Log(localoffset.z);
+                //Debug.Log(chunk.c_MeshQuantity);
+                //int vertexIndex = ((int)(localoffset.x) + 1) + ((int)(localoffset.z) + 1) * (chunk.c_MeshQuantity + 2);
+                //Debug.Log(vertexIndex);
+                //float vertexY = chunk.chunkMesh.vertices[vertexIndex].y;
+
+                if (Physics.Raycast(new Ray(new Vector3(x, transform.position.y + 1f, z), new Vector3(0, 1000, 0)), out RaycastHit Hit))
+                {
+                    //Debug.Log("Hit");
+                    if (Hit.collider.name == "Wall")
+                    {
+                        //Debug.Log("Hit Wall");
+                    }
+                    else
+                    {
+                        nodes.Add(new NavMeshNode(new Vector3(x,  transform.position.y, z), nodes.Count));
+                    }
+                }
+                else
+                {
+                    nodes.Add(new NavMeshNode(new Vector3(x, transform.position.y, z), nodes.Count));
+                }
+
+                //nodes.Add(new NavMeshNode(new Vector3(x, 0 /*transform.position.y*/, z), nodes.Count));
+                nodes.LastOrDefault().ConnectNode(nodes);
+            }
+
+
+
+        }
+    }
+
     private void SpawnNodesSpiral(int total)
     {
         for (int i = 0; i < total; i++)
@@ -292,6 +461,7 @@ public class NavMesh_Script : MonoBehaviour
             else if (nodes[i].ConnectedNodes.Count(x => x != null) >= 4)
             {
                 Gizmos.color = new Color(0.9f, 0.1f, 0f, 1f);
+                //Gizmos.color = Color.blue;
             }
             else if (nodes[i].ConnectedNodes.Count(x => x != null) <= 3 && nodes[i].ConnectedNodes.Count(x => x != null) >= 1)
             {
@@ -301,9 +471,35 @@ public class NavMesh_Script : MonoBehaviour
             {
                 Gizmos.color = Color.black;
             }
+
             Gizmos.DrawWireCube(Tnodes[i].Pos, Vector3.one);
-                //Gizmos.color = Color.yellow;
+
+
+
+
+            //Gizmos.color = Color.yellow;
         }
+        if (CurrentShortestPath == null) return;
+        List<AStarNode> ShowenCurrentShortestPath = CurrentShortestPath;
+        foreach (AStarNode aStarNode in ShowenCurrentShortestPath)
+        {
+            //Debug.Log(TCurrentShortestPathTest.Count());
+            Gizmos.color = Color.blue;
+            Gizmos.DrawCube( new Vector3 (Tnodes[aStarNode.NavMeshNodeIndex].Pos.x, Tnodes[aStarNode.NavMeshNodeIndex].Pos.y +0.2f, Tnodes[aStarNode.NavMeshNodeIndex].Pos.z), Vector3.one);
+            //Debug.Log("drawing");
+        }
+
+        if (NodesLookedAt == null) return;
+        List<AStarNode> TCurrentShortestPathVisetedTest = NodesLookedAt;
+        foreach (AStarNode aStarNode in TCurrentShortestPathVisetedTest)
+        {
+            //Debug.Log(TCurrentShortestPathTest.Count());
+            Gizmos.color = Color.red;
+            Gizmos.DrawCube(Tnodes[aStarNode.NavMeshNodeIndex].Pos, Vector3.one);
+            //Debug.Log("drawing");
+        }
+
+
         //foreach(var Node in nodes)
         //{
 
@@ -328,35 +524,231 @@ public class NavMesh_Script : MonoBehaviour
         }
     }
 
-    public List<Vector3> FindPath()
+    public List<Vector3> FindPath( Vector3 StartPoint, Vector3 EndPoint)
     {
+        Debug.Log("starting to look for path");
+        AStarNode NodeWithCurrentShortestPath;
+        List<AStarNode> AStarNodes = new List<AStarNode>(); // all nodes peeked at
+        List<AStarNode> VistedAStarNode = new List<AStarNode>(); //AllVisteted nodes
+        List<AStarNode> ToVistAStarNode = new List<AStarNode>(); // openSet
+        NavMeshNode StartingNode = null;
+        NavMeshNode EndNode = null;
+        DateTime time = DateTime.Now;
 
+        AStarNode nextNode = null;
+        //find starting node
+        //Debug.Log("Now trying node at " + node.Pos + " With index " + node.NavMeshNodeIndex);
+        foreach (NavMeshNode node in nodes)
+        {
+            //if ((node.Pos - StartPoint).magnitude < 1)
+            //{
+            //    StartingNode = node;
+            //    Debug.Log("Start node " +StartingNode.Pos);
+            //}
+            //if ((node.Pos - EndPoint).magnitude < 1)
+            //{
+            //    EndNode = node;
+            //    Debug.Log("End node " + EndNode.Pos);
+            //}
+            //if (EndNode != null && StartingNode != null)
+            //{
+            //    Debug.Log("escaped early");
+            //    break;
+            //}
+            //Debug.Log("Now trying node at " + node.Pos + " With index " + node.NavMeshNodeIndex);
+            if ((node.Pos - StartPoint).x < 1 && (node.Pos - StartPoint).x > -1 && (node.Pos - StartPoint).z < 1 && (node.Pos - StartPoint).z > -1)
+            {
+                StartingNode = node;
+                Debug.Log("Start node " + StartingNode.Pos);
+
+            }
+            if ((node.Pos - EndPoint).x < 1 && (node.Pos - EndPoint).x > -1 && (node.Pos - EndPoint).z < 1 && (node.Pos - EndPoint).z > -1)
+            {
+                EndNode = node;
+                Debug.Log("End node " + EndNode.Pos);
+            }
+            if (EndNode != null && StartingNode != null)
+            {
+                Debug.Log("escaped early");
+                break;
+            }
+
+
+        }
+        NodeWithCurrentShortestPath = new AStarNode(FindAbsoluteDistance(StartPoint, EndPoint), 0, null, StartingNode.NavMeshNodeIndex);
+        Debug.Log("Cost of first node " + FindAbsoluteDistance(StartPoint, EndPoint).magnitude);
+
+        Debug.Log("Starting node is at  " + nodes[StartingNode.NavMeshNodeIndex].Pos);
+
+        VistedAStarNode.Add(NodeWithCurrentShortestPath);
+
+        AStarNode temp = NodeWithCurrentShortestPath;
+
+        while (NodeWithCurrentShortestPath.NavMeshNodeIndex != EndNode.NavMeshNodeIndex && DateTime.Now < time.AddSeconds(8))
+        {
+            NodesLookedAt = AStarNodes;
+
+            
+
+
+            //foreach (AStarNode aStarNode in VistedAStarNode)
+            //{
+
+
+            //Debug.Log("!!!!!!!!!!!! Current node cost " + NodeWithCurrentShortestPath.CoastofUsingThisNode + " for node at " + nodes[NodeWithCurrentShortestPath.NavMeshNodeIndex].Pos);
+
+            foreach (NavMeshNodeConnections Connection in nodes[NodeWithCurrentShortestPath.NavMeshNodeIndex].ConnectedNodes)
+                {
+                    //Debug.Log(Connection);
+                if (Connection != null && Connection.StartingNavMeshNode.Pos != Connection.EndingNavMeshNode.Pos)
+                {
+                    bool nodeAlreadyMapped = false;
+                    foreach (AStarNode starNode in AStarNodes)
+                    {
+                        if (nodes[starNode.NavMeshNodeIndex].Pos == Connection.EndingNavMeshNode.Pos)
+                        {
+                            nodeAlreadyMapped = true;
+                            if (starNode.CoastFromStartPoint >= NodeWithCurrentShortestPath.CoastFromStartPoint + Connection.TravelCost)
+                            {
+                                starNode.CoastFromStartPoint = NodeWithCurrentShortestPath.CoastFromStartPoint + Connection.TravelCost;
+                                starNode.PreviousNode = NodeWithCurrentShortestPath;
+                            }
+                            if (!VistedAStarNode.Contains(starNode))
+                            {
+                                ToVistAStarNode.Add(starNode);
+                            }
+                        }
+                    }
+                    if (!nodeAlreadyMapped)
+                    {
+                        nextNode = new AStarNode(FindAbsoluteDistance(Connection.EndingNavMeshNode.Pos, EndNode.Pos), NodeWithCurrentShortestPath.CoastFromStartPoint + Connection.TravelCost, NodeWithCurrentShortestPath, Connection.EndingNavMeshNode.NavMeshNodeIndex);
+                        AStarNodes.Add(nextNode);
+                        Debug.Log("Cost of using node is " + nextNode.CoastofUsingThisNode + " which is " + FindAbsoluteDistance(Connection.EndingNavMeshNode.Pos, EndNode.Pos).magnitude + " + " + NodeWithCurrentShortestPath.CoastFromStartPoint + Connection.TravelCost + " for node at " + nodes[nextNode.NavMeshNodeIndex].Pos);
+
+                        ToVistAStarNode.Add(nextNode);
+                        Debug.Log("Node added to open set");
+                    }
+
+                    //if (nextNode.CoastofUsingThisNode < NodeWithCurrentShortestPath.CoastofUsingThisNode)
+                    {
+                        //ToVistAStarNode.Add(nextNode);
+                        //Debug.Log("Node added to open set");
+                    }
+                }
+
+            }
+            //}
+            temp = new AStarNode();
+
+            foreach (AStarNode starNode in ToVistAStarNode)
+            {
+                if (starNode.CoastofUsingThisNode <= temp.CoastofUsingThisNode && !VistedAStarNode.Contains(starNode))
+                {
+                    temp = starNode;
+                    //VistedAStarNode.Add(temp);
+                    //Debug.Log("added node to Visted list " + nodes[temp.NavMeshNodeIndex].Pos + " index " + temp.NavMeshNodeIndex);
+                }
+
+            }
+            if (temp.CoastofUsingThisNode >= float.MaxValue /*NodeWithCurrentShortestPath.CoastofUsingThisNode*/ && VistedAStarNode.Count > 1)
+            {
+
+                temp = VistedAStarNode[VistedAStarNode.IndexOf(NodeWithCurrentShortestPath) - 1];
+                Debug.Log("retreating to prior node, moving to node at visted index  " + VistedAStarNode.IndexOf(temp));
+                CurrentShortestPath.Remove(temp);
+                //Debug.Log("moving bak to " + nodes[temp.NavMeshNodeIndex].Pos);
+            }
+            VistedAStarNode.Add(temp);
+            Debug.Log("added node to Visted list " + nodes[temp.NavMeshNodeIndex].Pos + " index " + temp.NavMeshNodeIndex);
+            NodeWithCurrentShortestPath = temp;
+            ToVistAStarNode.Clear();
+
+            Debug.Log("NodeWithCurrentShortestPath  " + NodeWithCurrentShortestPath.NavMeshNodeIndex);
+            if (!CurrentShortestPath.Contains(NodeWithCurrentShortestPath)) { CurrentShortestPath.Add(NodeWithCurrentShortestPath); }
+        }
+
+
+
+        List<Vector3> Path = new List<Vector3>();
+ 
+        Debug.Log("Start node " + StartingNode.Pos);
+        Debug.Log("End node " + EndNode.Pos);
+        Debug.Log("End node " + EndNode.Pos);
+        foreach (AStarNode thing in CurrentShortestPath)
+        {
+            Debug.Log(nodes[thing.NavMeshNodeIndex].Pos + " " + thing.CoastofUsingThisNode);
+
+        }
+        Path.Add(nodes[NodeWithCurrentShortestPath.NavMeshNodeIndex].Pos);
+        CurrentShortestPath.Clear();
+        CurrentShortestPath.Add(NodeWithCurrentShortestPath);
+        AStarNode NextNodeToCheck = NodeWithCurrentShortestPath.PreviousNode;
+        while (Path.Last() != StartingNode.Pos)
+        {
+            Debug.Log(Path.Last());
+            CurrentShortestPath.Add(NextNodeToCheck);
+            Path.Add(nodes[NextNodeToCheck.NavMeshNodeIndex].Pos);
+            NextNodeToCheck = NextNodeToCheck.PreviousNode;
+        }
+        return Path;
 
         return new List<Vector3>();
     }
 
-    private Vector3 FindAbsuluteDistances(Vector3 Start, Vector3 End)
+    private Vector3 FindAbsoluteDistance(Vector3 Start, Vector3 End)
     {
         return (Start - End);
     }
 }
 
+public class AStarAlg
+{
+
+}
+
 public class AStarNode
 {
-    //public Vector3 
+    public int NavMeshNodeIndex;
+    public Vector3 DistanceToEndPoint;
+    public float CoastFromStartPoint;
+    public float CoastofUsingThisNode = float.MaxValue;
+    public AStarNode PreviousNode;
+    public AStarNode (Vector3 DistanceToEndPoint, float CoastFromStartPoint, AStarNode previousNode, int NavMeshNodeIndex)
+    {
+
+        this.DistanceToEndPoint = DistanceToEndPoint;
+        this.CoastFromStartPoint = CoastFromStartPoint;
+        if (previousNode == null)
+        {
+            CoastofUsingThisNode = float.MaxValue;
+        }
+        else
+        {
+            CoastofUsingThisNode = DistanceToEndPoint.magnitude + CoastFromStartPoint;
+        }
+
+        this.PreviousNode = previousNode;
+        this.NavMeshNodeIndex = NavMeshNodeIndex;
+    }
+    public AStarNode()
+    {
+
+    }
+    //public 
 }
 public class NavMeshNode
 {
+    public int NavMeshNodeIndex;
     public Vector3 Pos { get; set; }
 
-    public int TerrainModifyer { get; set; }
+    public float TerrainModifyer { get; set; }
 
     public NavMeshNodeConnections[] ConnectedNodes = new NavMeshNodeConnections[9];
 
     //public NavMeshNode[] ConnectedNodes = new NavMeshNode[9];
     public NavMeshNode()
     {
-        TerrainModifyer = 1;
+        TerrainModifyer = 0.2f;
         //ConnectedNodes[4] = this;
     }
     public NavMeshNode(Vector3 Pos) : this()
@@ -371,6 +763,11 @@ public class NavMeshNode
         //    }
 
         //}
+        this.Pos = Pos;
+    }
+    public NavMeshNode(Vector3 Pos, int NavMeshNodeIndex) : this()
+    {
+        this.NavMeshNodeIndex = NavMeshNodeIndex;
         this.Pos = Pos;
     }
 
@@ -393,8 +790,9 @@ public class NavMeshNode
     }
     private void AddNodeConnection(NavMeshNode OtherNode)
     {
-        ConnectedNodes[IdentifyNodeDirection(this, OtherNode)] = new NavMeshNodeConnections(this, OtherNode);
+        this.ConnectedNodes[IdentifyNodeDirection(this, OtherNode)] = new NavMeshNodeConnections(this, OtherNode);
         OtherNode.ConnectedNodes[IdentifyNodeDirection(OtherNode, this)] = new NavMeshNodeConnections(OtherNode , this);
+
     }
     static private int IdentifyNodeDirection(NavMeshNode Node, NavMeshNode OtherNode)
     {
@@ -422,7 +820,7 @@ public class NavMeshNode
         {
             return 3;
         }
-        if (OtherNode.Pos.z < Node.Pos.z && OtherNode.Pos.x == Node.Pos.x) //SE
+        if (OtherNode.Pos.z < Node.Pos.z && OtherNode.Pos.x > Node.Pos.x) //SE
         {
             return 5;
         }
@@ -434,23 +832,29 @@ public class NavMeshNode
     }
 
 }
+public class NavMeshSettings
+{
+    public float TerrainModifyer { get; set; } = 0.2f;
+    public int MaxTravelHight { get; set; }
+}
 public class NavMeshNodeConnections
 {
     public NavMeshNode StartingNavMeshNode { get; set; }
     public NavMeshNode EndingNavMeshNode { get; set; }
     public Vector3 TravelVector { get; set; }
-    public int TravelCost { get; set; }
+    public float TravelCost { get; set; }
 
     public NavMeshNodeConnections()
     {
         TravelVector = new Vector3();
-        TravelCost = 1;
+        TravelCost = 0.2f;
     }
     public NavMeshNodeConnections(NavMeshNode StartingNavMeshNode, NavMeshNode EndingNavMeshNode) : this() 
     {
         this.StartingNavMeshNode = StartingNavMeshNode;
         this.EndingNavMeshNode = EndingNavMeshNode;
-
+        TravelCost = CalculateTravelCost();
+        TravelVector = CalculateTravelVector();
     }
     public Vector4 CalculateTravelVector()
     {
@@ -458,9 +862,9 @@ public class NavMeshNodeConnections
         return TravelVector;
         //return new Vector3();
     }
-    public int CalculateTravelCost()   
+    public float CalculateTravelCost()   
     {
-        TravelCost = (int)Vector3.Distance(StartingNavMeshNode.Pos, EndingNavMeshNode.Pos) * StartingNavMeshNode.TerrainModifyer;
+        TravelCost = Vector3.Distance(StartingNavMeshNode.Pos, EndingNavMeshNode.Pos) * StartingNavMeshNode.TerrainModifyer;
 
         return TravelCost;
         //return 1;
