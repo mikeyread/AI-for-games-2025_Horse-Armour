@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.12731749, g: 0.13414757, b: 0.1210787, a: 1}
+  m_IndirectSpecularColor: {r: 0.12731713, g: 0.13414736, b: 0.12107852, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -446,6 +446,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6c06d09a5ba43d54e8bc663b6fc6a474, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &228341700 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7887980006006981434, guid: d902947db9a127941ba2742b48d67083,
+    type: 3}
+  m_PrefabInstance: {fileID: 1347744261}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba7ab81b7218af940b46bf6fb45bb0f2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &330585543
@@ -1338,6 +1350,36 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 875567799594793542, guid: d3e04d6ac53dac44c9b5336a496be117,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2428529180415671510, guid: d3e04d6ac53dac44c9b5336a496be117,
+        type: 3}
+      propertyPath: moveSpeed
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2428529180415671510, guid: d3e04d6ac53dac44c9b5336a496be117,
+        type: 3}
+      propertyPath: flockManager
+      value: 
+      objectReference: {fileID: 228341700}
+    - target: {fileID: 2428529180415671510, guid: d3e04d6ac53dac44c9b5336a496be117,
+        type: 3}
+      propertyPath: NavMesh_Script
+      value: 
+      objectReference: {fileID: 179675392}
+    - target: {fileID: 6977068823419908721, guid: d3e04d6ac53dac44c9b5336a496be117,
+        type: 3}
+      propertyPath: m_Drag
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6977068823419908721, guid: d3e04d6ac53dac44c9b5336a496be117,
+        type: 3}
+      propertyPath: m_Mass
+      value: 100
+      objectReference: {fileID: 0}
     - target: {fileID: 7234090881976979871, guid: d3e04d6ac53dac44c9b5336a496be117,
         type: 3}
       propertyPath: m_Name
@@ -1642,6 +1684,11 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 8343172984389472700, guid: 11f04b8d2b2363748b2c55ea61207a19,
         type: 3}
+    - target: {fileID: 7887980006006981434, guid: d902947db9a127941ba2742b48d67083,
+        type: 3}
+      propertyPath: LockYPosition
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8887217333388661733, guid: d902947db9a127941ba2742b48d67083,
         type: 3}
       propertyPath: m_RootOrder

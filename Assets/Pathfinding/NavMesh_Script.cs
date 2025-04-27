@@ -133,7 +133,7 @@ public class NavMesh_Script : MonoBehaviour
         //nodes
         //nodes.Sort();
         //nodes = nodes.OrderBy(NavMeshNode => NavMeshNode.Pos.magnitude).ToList();
-        if (time <= 3)
+        if (time <= 1)
         {
             time += Time.deltaTime;
         }
@@ -167,7 +167,7 @@ public class NavMesh_Script : MonoBehaviour
         }
 
         //Debug.Log("test");
-        PlayerOderUnit();
+        //PlayerOderUnit();
     }
 
     private void FixedUpdate()
@@ -234,6 +234,7 @@ public class NavMesh_Script : MonoBehaviour
 
     }
 
+
     //to get active leafs
     private void NavagateTree()
     {
@@ -253,15 +254,15 @@ public class NavMesh_Script : MonoBehaviour
 
 
                 //DEAL WITH THIS
-                //if (Grid.n_depth >= quadtreeWorldGenerator.WorldSettings.Quadtree_maxDepth)
-                //{
+                if (Grid.n_depth <= 5 /*quadtreeWorldGenerator.WorldSettings.Quadtree_maxDepth*/)
+                {
                     
                     SpawnNodesSqure(Grid.g_Position, (int)(Grid.chunk.c_MeshScale * Grid.chunk.c_MeshQuantity), Grid.chunk);
 
                     Debug.Log("Grid: " + Grid.g_Position);
                     //Debug.Log("Chunk: " + Grid.chunk.c_MeshScale);
                     
-                //}
+                }
             }
 
         }
