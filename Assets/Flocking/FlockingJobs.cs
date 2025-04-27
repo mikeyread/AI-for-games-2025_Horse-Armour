@@ -132,6 +132,7 @@ namespace Flocking
             var targetDirection = Vector3.zero;
             var test = float3.zero;
 
+
             for (int i = 0; i < Size; i++)
             {
                 targetDirection = target - currentPos;
@@ -243,7 +244,7 @@ namespace Flocking
             float3 cohesion = float3.zero;
 
             var tendency = math.normalizesafe(Goal - currentPos) * Weights.TendencyWeight;
-            Debug.Log("Tendency: " + tendency);
+            //Debug.Log("Tendency: " + tendency);
 
             for (int i = 0; i < Size; i++)
             {

@@ -17,6 +17,10 @@ namespace Flocking
     //Unsafe class for pointers
     public unsafe class FlockManager : FlockValues
     {
+        [SerializeField]
+        NavMesh_Script navMesh;
+
+
 
         public Transform FlockMember;
         public bool LockYPosition;
@@ -148,6 +152,9 @@ namespace Flocking
                         //https://discussions.unity.com/t/optimization-mesh-vertice-finding/702555
                         //https://www.reddit.com/r/Unity3D/comments/gvgtgo/get_highest_y_value_from_a_list_of_meshes_at/?rdt=57688
                     }
+
+
+
                 }
             }
 
@@ -298,3 +305,13 @@ namespace Flocking
         }
     }
 }
+
+
+
+
+//Serialised variable takes in navmesh script / object
+//call function called find path
+//returns array of positions
+//give path start path end
+//feeds into job thread
+//move to next position once you reach previous

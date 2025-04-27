@@ -119,6 +119,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Weights:
+    GoalWeight: 1
     TendencyWeight: 1
     AlignmentWeight: 1
     NoiseWeight: 1
@@ -128,5 +129,7 @@ MonoBehaviour:
   MaxSpeed: 6
   RotationSpeed: 4
   Destination: {fileID: 0}
-  FlockMember: {fileID: 0}
-  UseSingleThread: 0
+  navMesh: {fileID: 0}
+  FlockMember: {fileID: 8343172984389472700, guid: 11f04b8d2b2363748b2c55ea61207a19,
+    type: 3}
+  LockYPosition: 0

@@ -143,8 +143,8 @@ public class NavMesh_Script : MonoBehaviour
             {
                 Debug.Log("Navigate Tree Triggered");
                 done = true;
-                //NavagateTree();
-                SpawnNodesSetSqure(new Vector3(0, 0, 0), 100);
+                NavagateTree();
+                //SpawnNodesSetSqure(new Vector3(0, 0, 0), 100);
 
 
             }
@@ -289,12 +289,14 @@ public class NavMesh_Script : MonoBehaviour
                 int vertexIndex = ((int)(localoffset.x) + 1) + ((int)(localoffset.z) + 1) * (chunk.c_MeshQuantity + 2);
                 //Debug.Log(vertexIndex);
                 float vertexY = chunk.chunkMesh.vertices[vertexIndex].y;
-                if (Physics.Raycast(new Ray(new Vector3(x, vertexY + 10f, z), new Vector3(0, 1000, 0)), out RaycastHit Hit))
+                //Debug.DrawLine(new Vector3(x, vertexY + 500f, z), new Vector3(x, -1000, z), Color.red, float.MaxValue);
+                if (Physics.Raycast(new Ray(new Vector3(x, vertexY + 500f, z), new Vector3(0, -1000, 0)), out RaycastHit Hit))
                 {
                     //Debug.Log("Hit");
-                    if (Hit.collider.name == "Wall")
+                    //Debug.Log("Hit" + Hit.collider.name);
+                    if (Hit.collider.name == "TreePrefab(Clone)")
                     {
-                        //Debug.Log("Hit Wall");
+                        Debug.Log("Hit tree");
                     }
                     else
                     {
