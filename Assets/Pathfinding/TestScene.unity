@@ -1626,6 +1626,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: ManagerEntity
       objectReference: {fileID: 0}
+    - target: {fileID: 7745680863097179477, guid: d902947db9a127941ba2742b48d67083,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7887980006006981434, guid: d902947db9a127941ba2742b48d67083,
         type: 3}
       propertyPath: navMesh

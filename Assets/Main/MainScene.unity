@@ -148,7 +148,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 83773221}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 107.70909, y: 107.56006, z: 135.70563}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -167,6 +167,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd2e32b0b31790b44a0efd003420ca3a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  WorldSettings:
+    World_Seed: 0
+    Quadtree_maxDepth: 7
+    Quadtree_GridSphericalCheck: 2.5
+    Chunk_QuadQuantity: 32
+    Chunk_QuadScale: 0.5
+    objDensity: 0.05
+    prefab: {fileID: 5405781741735463407, guid: 6021422935829b04ebc1477bd8030ad7,
+      type: 3}
 --- !u!1001 &254969418
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -255,12 +264,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 24c89118cbd0f2a48955b8e4a9d00f08, type: 3}
---- !u!4 &254969419 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 24c89118cbd0f2a48955b8e4a9d00f08,
-    type: 3}
-  m_PrefabInstance: {fileID: 254969418}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &266229288
 GameObject:
   m_ObjectHideFlags: 0
@@ -653,11 +656,12 @@ PrefabInstance:
         type: 3}
       propertyPath: FlockMember
       value: 
-      objectReference: {fileID: 254969419}
+      objectReference: {fileID: 8343172984389472700, guid: 11f04b8d2b2363748b2c55ea61207a19,
+        type: 3}
     - target: {fileID: 7887980006006981434, guid: d902947db9a127941ba2742b48d67083,
         type: 3}
       propertyPath: LockYPosition
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7887980006006981434, guid: d902947db9a127941ba2742b48d67083,
         type: 3}

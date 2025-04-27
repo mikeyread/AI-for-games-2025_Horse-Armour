@@ -88,6 +88,29 @@ namespace Flocking
         }
     }
 
+    //[BurstCompile]
+    //public struct treeDetection : IJobParallelFor
+    //{
+    //    public int Size;
+
+    //    [ReadOnly]
+    //    public NativeArray<float4x4> boidPos;
+
+    //    [WriteOnly]
+    //    public NativeArray<float4x4> hitObjectsPos;
+
+
+    //    public void Execute(int index)
+    //    {
+
+
+
+    //    }
+    //}
+
+
+
+
     [BurstCompile]
     public struct YLocked : IJobParallelFor
     {
@@ -100,7 +123,7 @@ namespace Flocking
         public float RotationSpeed;
         public int Size;
         public float3 Goal;
-
+        
         [ReadOnly]
         public NativeArray<float> NoiseOffsets;
 
@@ -112,6 +135,8 @@ namespace Flocking
 
         [WriteOnly]
         public NativeArray<float4x4> Dst;
+
+        //do boxcast command as seperate job, finish it first, then pass values into here corresponding to each boid
 
         public void Execute(int index)
         {
@@ -167,7 +192,10 @@ namespace Flocking
                 var other = new float3 (b.Position().x, 1000, b.Position().z);
 
 
-                    
+                //HERE
+                //BoxcastCommand
+
+                
 
                 // Perform separation
                 separation += TransformExtensions.SeparationVector(currentPos, other, MaxDist);
