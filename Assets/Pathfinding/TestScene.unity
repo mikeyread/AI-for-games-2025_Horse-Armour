@@ -348,6 +348,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9112871000733397400, guid: 09f2349851ce52942a685dbf769a7d3d,
         type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9112871000733397400, guid: 09f2349851ce52942a685dbf769a7d3d,
+        type: 3}
       propertyPath: MaxTravelHight
       value: 10
       objectReference: {fileID: 0}
@@ -443,7 +448,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 131418858}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6c06d09a5ba43d54e8bc663b6fc6a474, type: 3}
   m_Name: 
@@ -1445,6 +1450,37 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d3e04d6ac53dac44c9b5336a496be117, type: 3}
+--- !u!1 &1264114167
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1264114168}
+  m_Layer: 0
+  m_Name: Flock Destination
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1264114168
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1264114167}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 24
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1310219087
 GameObject:
   m_ObjectHideFlags: 0
@@ -1680,9 +1716,14 @@ PrefabInstance:
       objectReference: {fileID: 179675392}
     - target: {fileID: 7887980006006981434, guid: d902947db9a127941ba2742b48d67083,
         type: 3}
+      propertyPath: flockSize
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7887980006006981434, guid: d902947db9a127941ba2742b48d67083,
+        type: 3}
       propertyPath: Destination
       value: 
-      objectReference: {fileID: 1310219091}
+      objectReference: {fileID: 1264114168}
     - target: {fileID: 7887980006006981434, guid: d902947db9a127941ba2742b48d67083,
         type: 3}
       propertyPath: FlockMember
@@ -1693,6 +1734,26 @@ PrefabInstance:
         type: 3}
       propertyPath: LockYPosition
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7887980006006981434, guid: d902947db9a127941ba2742b48d67083,
+        type: 3}
+      propertyPath: SeparationDistance
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7887980006006981434, guid: d902947db9a127941ba2742b48d67083,
+        type: 3}
+      propertyPath: Weights.NoiseWeight
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7887980006006981434, guid: d902947db9a127941ba2742b48d67083,
+        type: 3}
+      propertyPath: Weights.TendencyWeight
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7887980006006981434, guid: d902947db9a127941ba2742b48d67083,
+        type: 3}
+      propertyPath: Weights.AlignmentWeight
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8887217333388661733, guid: d902947db9a127941ba2742b48d67083,
         type: 3}

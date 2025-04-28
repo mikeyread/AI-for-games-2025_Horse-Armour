@@ -160,26 +160,26 @@ namespace Flocking
 
             for (int i = 0; i < Size; i++)
             {
-                targetDirection = target - currentPos;
+                //targetDirection = target - currentPos;
 
-                test = targetDirection;
+                //test = targetDirection;
 
-                float distance = targetDirection.magnitude;
+                //float distance = targetDirection.magnitude;
 
-                if (distance > targetRadius)
-                {
-                    targetDirection.Normalize();
-                    //current.Forward() = Vector3.zero;
+                //if (distance > targetRadius)
+                //{
+                //    targetDirection.Normalize();
+                //    //current.Forward() = Vector3.zero;
 
-                    if (distance < slowRadius)
-                    { 
-                        targetDirection *= Speed * (distance / slowRadius);
-                    }
-                    else
-                    {
-                        targetDirection *= Speed;
-                    }
-                }
+                //    if (distance < slowRadius)
+                //    { 
+                //        targetDirection *= Speed * (distance / slowRadius);
+                //    }
+                //    else
+                //    {
+                //        targetDirection *= Speed;
+                //    }
+                //}
                 
 
 
@@ -212,10 +212,10 @@ namespace Flocking
 
             var avg = 1f / perceivedSize;
 
-            alignment *= avg;
+            //alignment *= avg;
             cohesion *= avg;
             cohesion = math.normalizesafe(cohesion - currentPos);
-            var direction = separation + (Weights.AlignmentWeight * alignment) + cohesion + /*(Weights.TendencyWeight * tendency)*/ + test;
+            var direction = separation + (Weights.AlignmentWeight * alignment) + cohesion + (Weights.TendencyWeight * tendency); //+ test;
 
             var targetRotation = current.Forward().QuaternionBetween(math.normalizesafe(direction));
             var finalRotation = current.Rotation();
@@ -315,9 +315,15 @@ namespace Flocking
                 finalRotation = math.lerp(finalRotation.value, targetRotation.value, RotationSpeed * DeltaTime);
             }
 
-            var pNoise = math.abs(noise.cnoise(new float2(Time, NoiseOffsets[index])) * 2f - 1f);
-            var speedNoise = Speed * (1f + pNoise * Weights.NoiseWeight * 0.9f);
-            var finalPosition = currentPos + current.Forward() * speedNoise * DeltaTime;
+            //var pNoise = math.abs(noise.cnoise(new float2(Time, NoiseOffsets[index])) * 2f - 1f);
+            //Debug.Log("Noise: " + pNoise);
+            //var speedNoise = Speed * (1f + pNoise * Weights.NoiseWeight * 0.9f);
+            //Debug.Log("Speed Noise: " + speedNoise);
+            //var finalPosition = currentPos + current.Forward() /** speedNoise*/ * DeltaTime;
+
+            var finalPosition = currentPos + current.Forward() * 10 * DeltaTime;
+
+            
 
             Dst[index] = float4x4.TRS(finalPosition, finalRotation, new float3(1));
         }

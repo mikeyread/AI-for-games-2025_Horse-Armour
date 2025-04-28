@@ -8,7 +8,7 @@ namespace Flocking
         public FlockingWeights Weights = FlockingWeights.Default();
         //How close can they get before seperating
         public float SeparationDistance = 10f;
-
+        //Radius of initial spawn locations
         public float Radius = 20f;
         //How many entities to spawn
         public int flockSize = 512;

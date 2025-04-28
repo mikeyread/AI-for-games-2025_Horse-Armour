@@ -126,11 +126,13 @@ namespace Flocking
 
             if (gotPath)
             {
-                Debug.Log("Not Null");
-                if(Vector3.Distance(pathNodes[currentNode], this.transform.position) <= 20)
+                //Debug.Log("Not Null");
+                if(Vector3.Distance(pathNodes[currentNode], this.transform.position) <= 10)
                 {
+                    Debug.Log("Before Update: " + Destination.position);
                     currentNode++;
                     Destination.position = pathNodes[currentNode];
+                    Debug.Log("After Update: " + Destination.position);
                 }
             }
 
@@ -372,16 +374,11 @@ namespace Flocking
 
         private void OnDrawGizmos()
         {
-            //if (vertices != null) 
-            //{
-            //    foreach (float3 vertex in vertices)
-            //    {
-            //        //Debug to see which vertex the boid is locked to (Y axis)
-            //        Gizmos.DrawWireSphere(vertex, 0.1f);
+            //Debug to see which vertex the boid is locked to (Y axis)
+            Gizmos.DrawWireSphere(Destination.position, 10f);
 
-            //    }
-            //}
-            
+ 
+
 
         }
     }
