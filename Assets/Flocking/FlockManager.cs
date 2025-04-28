@@ -126,13 +126,10 @@ namespace Flocking
 
             if (gotPath)
             {
-                //Debug.Log("Not Null");
-                if(Vector3.Distance(pathNodes[currentNode], this.transform.position) <= 10)
+                if(Vector3.Distance(pathNodes[currentNode], this.transform.position) <= 5)
                 {
-                    Debug.Log("Before Update: " + Destination.position);
                     currentNode++;
                     Destination.position = pathNodes[currentNode];
-                    Debug.Log("After Update: " + Destination.position);
                 }
             }
 
@@ -152,6 +149,7 @@ namespace Flocking
                 {
                     Vector3 origin = dstMatrices[i].Position();
                     Vector3 direction = new Vector3(0f, -1f, 0f);
+                    //Used this algorithm to figure out layermask via bitshifting, not needed afterwards
                     //int layer = 3;
                     //int layermask = 1 << layer;
                     //layermask = ~layermask;
@@ -344,9 +342,11 @@ namespace Flocking
 
         public void UpdateDestination(List <Vector3> newDest)
         {
+            Debug.Log("updated dest");
             pathNodes = newDest;
             currentNode = 0;
 
+            Destination.transform.position = pathNodes[currentNode];
             gotPath = true;
         }
 
@@ -374,12 +374,7 @@ namespace Flocking
 
         private void OnDrawGizmos()
         {
-            //Debug to see which vertex the boid is locked to (Y axis)
-            Gizmos.DrawWireSphere(Destination.position, 10f);
-
- 
-
-
+            Gizmos.DrawWireSphere(Destination.position, 5f);
         }
     }
 }

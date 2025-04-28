@@ -3,6 +3,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Jobs;
 
@@ -150,93 +151,53 @@ namespace Flocking
             var cohesion = float3.zero;
             var tendency = math.normalizesafe(Goal - currentPos) * Weights.TendencyWeight;
 
-            var target = Goal;
-            var targetRadius = 1.5f;
-            var slowRadius = 20f;
+ 
 
             var targetDirection = Vector3.zero;
             var test = float3.zero;
 
 
-            for (int i = 0; i < Size; i++)
+            if (Vector3.Distance(currentPos, Goal) >= 3f)
             {
-                //targetDirection = target - currentPos;
-
-                //test = targetDirection;
-
-                //float distance = targetDirection.magnitude;
-
-                //if (distance > targetRadius)
-                //{
-                //    targetDirection.Normalize();
-                //    //current.Forward() = Vector3.zero;
-
-                //    if (distance < slowRadius)
-                //    { 
-                //        targetDirection *= Speed * (distance / slowRadius);
-                //    }
-                //    else
-                //    {
-                //        targetDirection *= Speed;
-                //    }
-                //}
-                
-
-
-                if (i == index)
+                for (int i = 0; i < Size; i++)
                 {
-                    continue;
+                    if (i == index)
+                    {
+                        continue;
+                    }
+
+                    var b = Src[i];
+                    var other = new float3(b.Position().x, 1000, b.Position().z);
+
+                    // Perform separation
+                    separation += TransformExtensions.SeparationVector(currentPos, other, MaxDist);
+
+                    // Perform alignment
+                    alignment += b.Forward();
+
+                    // Perform cohesion
+                    cohesion += other;
                 }
 
-                var b = Src[i];
-                var other = new float3 (b.Position().x, 1000, b.Position().z);
+                var avg = 1f / perceivedSize;
+
+                alignment *= avg;
+                cohesion *= avg;
+                cohesion = math.normalizesafe(cohesion - currentPos);
+                var direction = separation + (Weights.AlignmentWeight * alignment) + cohesion + (Weights.TendencyWeight * tendency); //+ test;
+
+                var targetRotation = Quaternion.LookRotation(direction, math.up());
 
 
-                //HERE
-                //BoxcastCommand
+                Debug.DrawRay(currentPos, direction, Color.red);
 
-                
+                var finalPosition = currentPos + current.Forward() * Speed * DeltaTime;
 
-                // Perform separation
-                separation += TransformExtensions.SeparationVector(currentPos, other, MaxDist);
+                finalPosition.y = YInputs[index] + 1;
 
-                // Perform alignment
-                alignment += b.Forward();
-
-                // Perform cohesion
-                cohesion += other;
-
-
-                    
+                Dst[index] = float4x4.TRS(finalPosition, targetRotation, new float3(1));
             }
-
-            var avg = 1f / perceivedSize;
-
-            //alignment *= avg;
-            cohesion *= avg;
-            cohesion = math.normalizesafe(cohesion - currentPos);
-            var direction = separation + (Weights.AlignmentWeight * alignment) + cohesion + (Weights.TendencyWeight * tendency); //+ test;
-
-            var targetRotation = current.Forward().QuaternionBetween(math.normalizesafe(direction));
-            var finalRotation = current.Rotation();
-
-            if (!targetRotation.Equals(current.Rotation()))
-            {
-                finalRotation = math.lerp(finalRotation.value, targetRotation.value, RotationSpeed * DeltaTime);
-            }
-
-            var pNoise = math.abs(noise.cnoise(new float2(Time, NoiseOffsets[index])) * 2f - 1f);
-            var speedNoise = Speed * (1f + pNoise * Weights.NoiseWeight * 0.9f);
-            var finalPosition = currentPos + current.Forward() * speedNoise * DeltaTime;
-
-            finalPosition.y = YInputs[index] + 1;
-
-            Dst[index] = float4x4.TRS(finalPosition, finalRotation, new float3(1));
-            
         }
-
-
-
     }
 
     [BurstCompile]
@@ -274,58 +235,50 @@ namespace Flocking
             var tendency = math.normalizesafe(Goal - currentPos) * Weights.TendencyWeight;
             //Debug.Log("Tendency: " + tendency);
 
-            for (int i = 0; i < Size; i++)
+            if (Vector3.Distance(currentPos, Goal) >= 10)
             {
-                if (i == index)
+                for (int i = 0; i < Size; i++)
                 {
-                    continue;
+                    if (i == index)
+                    {
+                        continue;
+                    }
+
+                    var b = Src[i];
+                    float3 other = b.Position();
+
+                    // Perform separation
+                    separation += TransformExtensions.SeparationVector(currentPos, other, MaxDist);
+
+                    // Perform alignment
+                    alignment += b.Forward();
+
+                    // Perform cohesion
+                    cohesion += other;
                 }
 
-                
-                
-                var b = Src[i];
-                float3 other = b.Position();
+                var avg = 1f / perceivedSize;
+
+                alignment *= avg;
+                cohesion *= avg;
+                cohesion = math.normalizesafe(cohesion - currentPos);
+                var direction = separation + (Weights.AlignmentWeight * alignment) + cohesion + (Weights.TendencyWeight * tendency);
 
 
-                // Perform separation
-                separation += TransformExtensions.SeparationVector(currentPos, other, MaxDist);
+                var targetRotation = Quaternion.LookRotation(direction, math.up());
 
-                // Perform alignment
-                alignment += b.Forward();
+                //Meant for smoother rotation but lead to issues with negative values
+                //if (!targetRotation.Equals(current.Rotation()))
+                //{
+                //    finalRotation = math.lerp(finalRotation.value, targetRotation.value, RotationSpeed * DeltaTime);
+                //}
 
-                // Perform cohesion
-                cohesion += other;
-                
+                Debug.DrawRay(currentPos, direction, Color.red);
 
-            }
+                var finalPosition = currentPos + current.Forward() * Speed * DeltaTime;
 
-            var avg = 1f / perceivedSize;
-
-            alignment *= avg;
-            cohesion *= avg;
-            cohesion = math.normalizesafe(cohesion - currentPos);
-            var direction = separation + (Weights.AlignmentWeight * alignment) + cohesion + (Weights.TendencyWeight * tendency);
-            
-
-            var targetRotation = current.Forward().QuaternionBetween(math.normalizesafe(direction));
-            var finalRotation = current.Rotation();
-
-            if (!targetRotation.Equals(current.Rotation()))
-            {
-                finalRotation = math.lerp(finalRotation.value, targetRotation.value, RotationSpeed * DeltaTime);
-            }
-
-            //var pNoise = math.abs(noise.cnoise(new float2(Time, NoiseOffsets[index])) * 2f - 1f);
-            //Debug.Log("Noise: " + pNoise);
-            //var speedNoise = Speed * (1f + pNoise * Weights.NoiseWeight * 0.9f);
-            //Debug.Log("Speed Noise: " + speedNoise);
-            //var finalPosition = currentPos + current.Forward() /** speedNoise*/ * DeltaTime;
-
-            var finalPosition = currentPos + current.Forward() * 10 * DeltaTime;
-
-            
-
-            Dst[index] = float4x4.TRS(finalPosition, finalRotation, new float3(1));
+                Dst[index] = float4x4.TRS(finalPosition, targetRotation, new float3(1));
+            }           
         }
     }
 }

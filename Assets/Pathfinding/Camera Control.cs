@@ -139,6 +139,7 @@ public class CameraControl : MonoBehaviour
             NavMesh_Script.CurrentShortestPath = new List<AStarNode>();
             //NavMesh_Script.FindPath(PathStart, PathEnd);
             //flockManager.pathNodes = NavMesh_Script.FindPath(PathStart, PathEnd);
+            Debug.Log("tRIGGERING function");
             flockManager.UpdateDestination(NavMesh_Script.FindPath(PathStart, PathEnd));
                 
         }

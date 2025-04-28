@@ -693,6 +693,7 @@ public class NavMesh_Script : MonoBehaviour
             Path.Add(nodes[NextNodeToCheck.NavMeshNodeIndex].Pos);
             NextNodeToCheck = NextNodeToCheck.PreviousNode;
         }
+        Path.Reverse();
         return Path;
 
         return new List<Vector3>();
