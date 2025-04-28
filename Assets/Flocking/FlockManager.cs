@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Linq;
+using System.Collections.Generic;
 using Unity.Burst.CompilerServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -22,6 +23,10 @@ namespace Flocking
         [SerializeField]
         NavMesh_Script navMesh;
 
+        //
+        public List<Vector3> pathNodes = null;
+        private int currentNode = 0;
+        private bool gotPath = false;
 
 
         public Transform FlockMember;
@@ -40,13 +45,11 @@ namespace Flocking
         private TransformAccessArray transformAccessArray;
         private JobHandle flockingHandle;
         private float3* center;
-
         private MeshFilter[] mfs;
+
 
         private void Start()
         {
-            //enabled = false;
-            //Invoke(nameof(Enable), 0.1f);
             // We spawn n GameObjects that we will manipulate. We store the positions and their associated noise offsets.
             // The noise offsts create random movement per boid.
             transforms = new Transform[flockSize];
@@ -82,12 +85,6 @@ namespace Flocking
             // Set the pointer to the float3 to be the default value, or float3.zero.
             UnsafeUtility.MemSet(center, default, UnsafeUtility.SizeOf<float3>());
         }
-
-        private void Enable()
-        {
-            enabled = true;
-        }
-
 
         private void OnDisable()
         {
@@ -126,6 +123,17 @@ namespace Flocking
         {
             // At the start of the frame, we ensure that all the jobs scheduled are completed.
             flockingHandle.Complete();
+
+            if (gotPath)
+            {
+                Debug.Log("Not Null");
+                if(Vector3.Distance(pathNodes[currentNode], this.transform.position) <= 20)
+                {
+                    currentNode++;
+                    Destination.position = pathNodes[currentNode];
+                }
+            }
+
 
 
             //Getting the nearset vertex (on x, z axis) and mapping the position to the Y value of it.
@@ -332,9 +340,12 @@ namespace Flocking
 
         }
 
-        public unsafe void UpdateDestination(Vector3 newDest)
+        public void UpdateDestination(List <Vector3> newDest)
         {
-            Destination.position = newDest;
+            pathNodes = newDest;
+            currentNode = 0;
+
+            gotPath = true;
         }
 
 
