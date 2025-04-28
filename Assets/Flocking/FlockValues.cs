@@ -4,7 +4,7 @@ namespace Flocking
 {
     public abstract class FlockValues : MonoBehaviour
     {
-
+        //How strong each influence is on the flock
         public FlockingWeights Weights = FlockingWeights.Default();
         //How close can they get before seperating
         public float SeparationDistance = 10f;

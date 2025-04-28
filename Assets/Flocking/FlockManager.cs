@@ -16,7 +16,6 @@ using URandom = UnityEngine.Random;
 
 namespace Flocking
 {
-    //Make player class interact, send positions over for destination
     //Unsafe class for pointers
     public unsafe class FlockManager : FlockValues
     {
@@ -50,8 +49,7 @@ namespace Flocking
 
         private void Start()
         {
-            // We spawn n GameObjects that we will manipulate. We store the positions and their associated noise offsets.
-            // The noise offsts create random movement per boid.
+            //Instantiating all boids
             transforms = new Transform[flockSize];
             srcMatrices = new NativeArray<float4x4>(transforms.Length, Allocator.Persistent);
             dstMatrices = new NativeArray<float4x4>(transforms.Length, Allocator.Persistent);
@@ -59,8 +57,6 @@ namespace Flocking
             noiseOffsets = new NativeArray<float>(transforms.Length, Allocator.Persistent);
             Ylevels = new NativeArray<float>(transforms.Length, Allocator.Persistent);
             vertices = new float3[flockSize];
-
-
 
             for (int i = 0; i < flockSize; i++)
             {
@@ -71,27 +67,27 @@ namespace Flocking
                 noiseOffsets[i] = URandom.value * 10f;
             }
 
-            // Create the transform access array with a cache of Transforms.
+            //Create the transform access array with a cache of Transforms.
             transformAccessArray = new TransformAccessArray(transforms);
 
-            // To pass from a Job struct back to our MonoBehaviour, we need to use a pointer. In newer packages there is
-            // NativeReference<T> which serves the same purpose as a pointer. This allows us to write the position
-            // back to our pointer so we can read it later in the main thread to use.
+            //To pass from a Job struct back to our MonoBehaviour, we need to use a pointer. In newer packages there is
+            //NativeReference<T> which serves the same purpose as a pointer. This allows us to write the position
+            //back to our pointer so we can read it later in the main thread to use.
             center = (float3*)UnsafeUtility.Malloc(
                 UnsafeUtility.SizeOf<float3>(),
                 UnsafeUtility.AlignOf<float3>(),
                 Allocator.Persistent);
 
-            // Set the pointer to the float3 to be the default value, or float3.zero.
+            //Set the pointer to the float3 to be the default value, or float3.zero.
             UnsafeUtility.MemSet(center, default, UnsafeUtility.SizeOf<float3>());
         }
 
         private void OnDisable()
         {
-            // Before this component is disabled, make sure that all the jobs are completed.
+            //Before this component is disabled, make sure that all the jobs are completed.
             flockingHandle.Complete();
 
-            // Then we dispose all the NativeArrays we allocate.
+            //Then we dispose all the NativeArrays we allocate.
             if (srcMatrices.IsCreated)
             {
                 srcMatrices.Dispose();
@@ -121,9 +117,10 @@ namespace Flocking
 
         private unsafe void Update()
         {
-            // At the start of the frame, we ensure that all the jobs scheduled are completed.
+            //At the start of the frame, we ensure that all the jobs scheduled are completed.
             flockingHandle.Complete();
 
+            //Updating destination to next node in path as flock travels
             if (gotPath)
             {
                 if(Vector3.Distance(pathNodes[currentNode], this.transform.position) <= 5)
@@ -179,16 +176,11 @@ namespace Flocking
                     }
                     else
                     {
-                        //Ylevels[i] = 0;
-                        //Debug.Log("returning");
                         return;
                     }
                 }
                 results.Dispose();
                 commands.Dispose();
-
-
-
 
                 /*Old method for Y locking
                 for (int i = 0; i < dstMatrices.Length; i++)
@@ -222,17 +214,10 @@ namespace Flocking
                         //Used for drawing debug gizmos
                         //vertices[i] = closestVertex;
                         Ylevels[i] = closestVertex.y;
-
-                        //If I want to find the highest Y position at a certain point (x,z), I might need to iterate through every vertice in the mesh again - not tenable.
-                        //But theoretically, you iterate through every vertex, throwing away anything that doesn't match the (x,z) coordinates.
-                        //For the ones that do you go check their Y value, updating it whenever you find a new vertex that is higher. Store this value somewhere.
-                        //https://discussions.unity.com/t/optimization-mesh-vertice-finding/702555
-                        //https://www.reddit.com/r/Unity3D/comments/gvgtgo/get_highest_y_value_from_a_list_of_meshes_at/?rdt=57688
                     }
                 }*/
             }
 
-            //https://discussions.unity.com/t/pinpointing-one-vertice-with-raycasthit/181509
 
             // Write the contents from the pointer back to our position.
             transform.position = *center;
@@ -251,35 +236,6 @@ namespace Flocking
             }.Schedule();
 
             JobHandle flockingJob;
-
-        //UpdateDestination(Destination.position);
-
-
-        //Useful links to look at later (Object Avoidance)
-        //https://ddavidhahn.github.io/cs184_projfinal/#collisions
-        //https://slsdo.github.io/steering-behaviors/
-        //https://www.red3d.com/cwr/nobump/nobump.html
-        //https://vergenet.net/~conrad/boids/pseudocode.html
-        //https://minoqi.medium.com/2d-flocking-algorithm-in-unity-6ee68be74165
-        //https://www.red3d.com/cwr/boids/
-        //https://www.youtube.com/watch?v=bqtqltqcQhw&feature=youtu.be
-        //https://stackoverflow.com/questions/9600801/evenly-distributing-n-points-on-a-sphere/44164075#44164075
-        //https://edirlei.com/aulas/game-ai-2020/GAME_AI_Lecture_07_Steering_Behaviours_2020.html
-        //https://people.ece.cornell.edu/land/courses/ece4760/labs/s2021/Boids/Boids.html
-        //https://learn.unity.com/tutorial/flocking
-        //https://blog.devgenius.io/boids-algorithm-simulating-bird-flocks-in-unity-ec733d529a92
-
-
-
-        //Arrival
-        //https://edirlei.com/aulas/game-ai-2020/GAME_AI_Lecture_07_Steering_Behaviours_2020.html
-        //https://slsdo.github.io/steering-behaviors/
-
-            
-
-
-
-
 
             if (LockYPosition)
             {
@@ -302,7 +258,7 @@ namespace Flocking
             }
             else
             {
-                flockingJob = new BatchedflockingJob
+                flockingJob = new BatchedFlockingJob
                 {
                     Weights = Weights,
                     Goal = Destination.position,
@@ -317,11 +273,7 @@ namespace Flocking
                     Dst = dstMatrices
                 }.Schedule(transforms.Length, 32);
             }
-
-            
-
-
-
+           
 
 
             // Combine all jobs to a single dependency, so we can pass this single dependency to the
@@ -351,7 +303,9 @@ namespace Flocking
         }
 
 
-        //Finding nearest vertex to Raycast Hit
+
+        //Finding nearest vertex to Raycast Hit - Not my own creation, credit goes to 'Bunny83'
+        //https://discussions.unity.com/t/pinpointing-one-vertice-with-raycasthit/181509
         public static int GetClosestVertex(RaycastHit hitInfo, int[] triangles)
         {
             var b = hitInfo.barycentricCoordinate;
@@ -378,13 +332,3 @@ namespace Flocking
         }
     }
 }
-
-
-
-
-//Serialised variable takes in navmesh script / object
-//call function called find path
-//returns array of positions
-//give path start path end
-//feeds into job thread
-//move to next position once you reach previous

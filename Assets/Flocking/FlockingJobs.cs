@@ -1,3 +1,4 @@
+using Flocking;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -89,29 +90,6 @@ namespace Flocking
         }
     }
 
-    //[BurstCompile]
-    //public struct treeDetection : IJobParallelFor
-    //{
-    //    public int Size;
-
-    //    [ReadOnly]
-    //    public NativeArray<float4x4> boidPos;
-
-    //    [WriteOnly]
-    //    public NativeArray<float4x4> hitObjectsPos;
-
-
-    //    public void Execute(int index)
-    //    {
-
-
-
-    //    }
-    //}
-
-
-
-
     [BurstCompile]
     public struct YLocked : IJobParallelFor
     {
@@ -136,8 +114,6 @@ namespace Flocking
 
         [WriteOnly]
         public NativeArray<float4x4> Dst;
-
-        //do boxcast command as seperate job, finish it first, then pass values into here corresponding to each boid
 
         public void Execute(int index)
         {
@@ -200,8 +176,11 @@ namespace Flocking
         }
     }
 
+    //Something in this job creates issues with the boids behaviour (not being able to go in the negative Z direction)
+    //So parts of it have been removed for the 'Y-Locked' job. I believe it is to do with the rotation,
+    //Though I only realised the full extent of this issue quite late so could not fix it in time.
     [BurstCompile]
-    public struct BatchedflockingJob : IJobParallelFor
+    public struct BatchedFlockingJob : IJobParallelFor
     {
 
         public FlockingWeights Weights;
@@ -225,60 +204,57 @@ namespace Flocking
         public void Execute(int index)
         {
             var current = Src[index];
-            float3 currentPos = current.Position();
-            int perceivedSize = Size - 1;
+            var currentPos = current.Position();
+            var perceivedSize = Size - 1;
 
-            float3 separation = float3.zero;
-            float3 alignment = float3.zero;
-            float3 cohesion = float3.zero;
-
+            var separation = float3.zero;
+            var alignment = float3.zero;
+            var cohesion = float3.zero;
             var tendency = math.normalizesafe(Goal - currentPos) * Weights.TendencyWeight;
-            //Debug.Log("Tendency: " + tendency);
 
-            if (Vector3.Distance(currentPos, Goal) >= 10)
+            for (int i = 0; i < Size; i++)
             {
-                for (int i = 0; i < Size; i++)
+                if (i == index)
                 {
-                    if (i == index)
-                    {
-                        continue;
-                    }
-
-                    var b = Src[i];
-                    float3 other = b.Position();
-
-                    // Perform separation
-                    separation += TransformExtensions.SeparationVector(currentPos, other, MaxDist);
-
-                    // Perform alignment
-                    alignment += b.Forward();
-
-                    // Perform cohesion
-                    cohesion += other;
+                    continue;
                 }
 
-                var avg = 1f / perceivedSize;
+                var b = Src[i];
+                var other = b.Position();
 
-                alignment *= avg;
-                cohesion *= avg;
-                cohesion = math.normalizesafe(cohesion - currentPos);
-                var direction = separation + (Weights.AlignmentWeight * alignment) + cohesion + (Weights.TendencyWeight * tendency);
+                // Perform separation
+                separation += TransformExtensions.SeparationVector(currentPos, other, MaxDist);
 
+                // Perform alignment
+                alignment += b.Forward();
 
-                var targetRotation = Quaternion.LookRotation(direction, math.up());
+                // Perform cohesion
+                cohesion += other;
+            }
 
-                //Meant for smoother rotation but lead to issues with negative values
-                //if (!targetRotation.Equals(current.Rotation()))
-                //{
-                //    finalRotation = math.lerp(finalRotation.value, targetRotation.value, RotationSpeed * DeltaTime);
-                //}
+            var avg = 1f / perceivedSize;
 
-                Debug.DrawRay(currentPos, direction, Color.red);
+            alignment *= avg;
+            cohesion *= avg;
+            cohesion = math.normalizesafe(cohesion - currentPos);
+            var direction = separation +
+                             Weights.AlignmentWeight * alignment +
+                             cohesion +
+                             Weights.TendencyWeight * tendency;
 
-                var finalPosition = currentPos + current.Forward() * Speed * DeltaTime;
+            var targetRotation = current.Forward().QuaternionBetween(math.normalizesafe(direction));
+            var finalRotation = current.Rotation();
 
-                Dst[index] = float4x4.TRS(finalPosition, targetRotation, new float3(1));
-            }           
+            if (!targetRotation.Equals(current.Rotation()))
+            {
+                finalRotation = math.lerp(finalRotation.value, targetRotation.value, RotationSpeed * DeltaTime);
+            }
+
+            var pNoise = math.abs(noise.cnoise(new float2(Time, NoiseOffsets[index])) * 2f - 1f);
+            var speedNoise = Speed * (1f + pNoise * Weights.NoiseWeight * 0.9f);
+            var finalPosition = currentPos + current.Forward() * speedNoise * DeltaTime;
+
+            Dst[index] = float4x4.TRS(finalPosition, finalRotation, new float3(1));
         }
     }
 }
