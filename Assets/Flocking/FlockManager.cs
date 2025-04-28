@@ -1,11 +1,13 @@
 using System.Drawing;
 using System.Linq;
+using Unity.Burst.CompilerServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.VisualScripting;
 using Unity.VisualScripting.Antlr3.Runtime;
+using UnityEditor.PackageManager;
 using UnityEngine;
 using UnityEngine.Jobs;
 using UnityEngine.UIElements;
@@ -13,7 +15,7 @@ using URandom = UnityEngine.Random;
 
 namespace Flocking
 {
-
+    //Make player class interact, send positions over for destination
     //Unsafe class for pointers
     public unsafe class FlockManager : FlockValues
     {
@@ -43,6 +45,8 @@ namespace Flocking
 
         private void Start()
         {
+            //enabled = false;
+            //Invoke(nameof(Enable), 0.1f);
             // We spawn n GameObjects that we will manipulate. We store the positions and their associated noise offsets.
             // The noise offsts create random movement per boid.
             transforms = new Transform[flockSize];
@@ -78,6 +82,12 @@ namespace Flocking
             // Set the pointer to the float3 to be the default value, or float3.zero.
             UnsafeUtility.MemSet(center, default, UnsafeUtility.SizeOf<float3>());
         }
+
+        private void Enable()
+        {
+            enabled = true;
+        }
+
 
         private void OnDisable()
         {
@@ -117,45 +127,76 @@ namespace Flocking
             // At the start of the frame, we ensure that all the jobs scheduled are completed.
             flockingHandle.Complete();
 
-            //Debug.Log("Destination: " + Destination.position);
 
-            //Getting the nearset vertice (on x, z axis) and mapping the position to the Y value of it.          
+            //Getting the nearset vertex (on x, z axis) and mapping the position to the Y value of it.
+            //For some reason it will randomly decide to not work upon running the editor occasionally. Don't know why.
+            //Just flick the bool on and off.
             if (LockYPosition)
             {
-                var results = new NativeArray<RaycastHit>(2, Allocator.TempJob);
-                var commands = new NativeArray<RaycastCommand>(1, Allocator.TempJob);
+                //Using threaded raycasting for better performance
+                var results = new NativeArray<RaycastHit>(dstMatrices.Length, Allocator.TempJob);
+                var commands = new NativeArray<RaycastCommand>(dstMatrices.Length, Allocator.TempJob);
 
 
                 for (int i = 0; i < dstMatrices.Length; i++)
                 {
-                    //Debug.DrawLine(dstMatrices[i].Position(), new Vector3(dstMatrices[i].Position().x, -10000, dstMatrices[i].Position().z));
+                    Vector3 origin = dstMatrices[i].Position();
+                    Vector3 direction = new Vector3(0f, -1f, 0f);
+                    //int layer = 3;
+                    //int layermask = 1 << layer;
+                    //layermask = ~layermask;
+                    //Debug.Log("Layermask: " + layermask);
 
-                    //Vector3 origin = dstMatrices[i].Position();
+                    QueryParameters testquery = new QueryParameters(-9, false, QueryTriggerInteraction.UseGlobal, false);
+                    commands[i] = new RaycastCommand(origin, direction, testquery);
+                }
+                JobHandle handletest = RaycastCommand.ScheduleBatch(commands, results, 1, 1, default(JobHandle));
+                handletest.Complete();
+                //Annoying to have to do the loop twice but necessary to ensure all threads are completed
+                for (int i = 0; i < dstMatrices.Length; i++)
+                {
+                    Debug.DrawLine(dstMatrices[i].Position(), results[i].point);
+                    //Debug.Log("Mesh = " +  results[i].collider.name);
+                    if (results[i].collider != null)
+                    {
+                        Debug.Log("Not null mesh");
+                        MeshCollider meshcolliderTest = results[i].collider as MeshCollider;
 
-                    //Vector3 direction = new Vector3(0f, -1, 0f);
-
-                    //commands[i] = new RaycastCommand(origin, direction, QueryParameters.Default);
-
-                    //JobHandle handle = RaycastCommand.ScheduleBatch(commands, results, 1, 2, default(JobHandle));
-
-                    //handle.Complete();
-
-                    //foreach (var hit in results)
-                    //{
-                    //    if (hit.collider != null)
-                    //    {
-                    //        //no hit
-                    //    }
-                    //    Debug.Log("name: " + hit.collider.name);
-                    //}
-
-                    //results.Dispose();
-                    //commands.Dispose();
+                        Mesh meshtest = meshcolliderTest.sharedMesh;
+                        int[] triangles = meshtest.triangles;
+                        Vector3 ClosestVert = meshtest.vertices[GetClosestVertex(results[i], triangles)];
+                        Debug.Log("got closest vert");
+                        Ylevels[i] = ClosestVert.y;
+                        //hit
+                    }
+                    else
+                    {
+                        //Ylevels[i] = 0;
+                        //Debug.Log("returning");
+                        return;
+                    }
+                }
+                results.Dispose();
+                commands.Dispose();
 
 
 
 
-                    if (Physics.Linecast(dstMatrices[i].Position(), new Vector3(dstMatrices[i].Position().x, -10000, dstMatrices[i].Position().z), out RaycastHit hitinfo))
+                /*Old method for Y locking
+                for (int i = 0; i < dstMatrices.Length; i++)
+                {
+                    Vector3 origin = dstMatrices[i].Position();
+                    Vector3 direction = new Vector3(0f, -1f, 0f);
+                    //int layer = 3;
+                    //int layermask = 1 << layer;
+                    //layermask = ~layermask;
+                    //Debug.Log("Layermask: " + layermask);
+
+                    QueryParameters testquery = new QueryParameters(-9, false, QueryTriggerInteraction.UseGlobal, false);
+                    commands[i] = new RaycastCommand(origin, direction, testquery);
+
+
+                    if (Physics.Raycast(dstMatrices[i].Position(), new Vector3(0, -1, 0), out RaycastHit hitinfo))
                     {
                         MeshCollider meshCollider = hitinfo.collider as MeshCollider;
 
@@ -170,7 +211,8 @@ namespace Flocking
                         int[] triangles = mesh.triangles;
                         Vector3 closestVertex = mesh.vertices[GetClosestVertex(hitinfo, triangles)];
 
-                        vertices[i] = closestVertex;
+                        //Used for drawing debug gizmos
+                        //vertices[i] = closestVertex;
                         Ylevels[i] = closestVertex.y;
 
                         //If I want to find the highest Y position at a certain point (x,z), I might need to iterate through every vertice in the mesh again - not tenable.
@@ -179,10 +221,10 @@ namespace Flocking
                         //https://discussions.unity.com/t/optimization-mesh-vertice-finding/702555
                         //https://www.reddit.com/r/Unity3D/comments/gvgtgo/get_highest_y_value_from_a_list_of_meshes_at/?rdt=57688
                     }
-                }
+                }*/
             }
 
-                        //https://discussions.unity.com/t/pinpointing-one-vertice-with-raycasthit/181509
+            //https://discussions.unity.com/t/pinpointing-one-vertice-with-raycasthit/181509
 
             // Write the contents from the pointer back to our position.
             transform.position = *center;

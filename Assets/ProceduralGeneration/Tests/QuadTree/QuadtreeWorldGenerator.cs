@@ -237,7 +237,8 @@ public class QuadTreeChunk {
         Chunk.GetComponent<MeshRenderer>().sharedMaterial.mainTexture = m_Texture;
 
         // Collider Attatchment
-        Chunk.AddComponent<BoxCollider>();
+        //Chunk.AddComponent<BoxCollider>();
+        Chunk.AddComponent<MeshCollider>();
 
         // Object Placement based on the chunks quadtree depth
         if (parentGrid.n_depth >= settings.Quadtree_maxDepth - 3) PopulateObjects();
